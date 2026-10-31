@@ -1,0 +1,54 @@
+# Aixuno PDF — PDF Tools
+
+> Free browser-based PDF toolkit: merge, split, compress, rotate, unlock, sign and convert PDF files. Documents are processed locally in the browser and are never uploaded to an Aixuno server.
+
+## Site
+
+- Name: Aixuno PDF
+- Homepage: https://pdf.aixuno.com/
+- Purpose: edit and convert PDF files without uploading them
+- All tools: https://pdf.aixuno.com/tools
+
+## Organise pages
+
+- Merge PDF: https://pdf.aixuno.com/merge-pdf
+- Split PDF: https://pdf.aixuno.com/split-pdf
+- Delete pages: https://pdf.aixuno.com/delete-pages
+- Extract pages: https://pdf.aixuno.com/extract-pages
+- Reorder pages: https://pdf.aixuno.com/reorder-pages
+- Rotate PDF: https://pdf.aixuno.com/rotate-pdf
+- Crop PDF: https://pdf.aixuno.com/crop-pdf
+- Insert pages: https://pdf.aixuno.com/insert-pages
+- Create blank PDF: https://pdf.aixuno.com/create-blank-pdf
+- Page numbers: https://pdf.aixuno.com/page-number
+
+## Edit and secure
+
+- Compress PDF: https://pdf.aixuno.com/compress-pdf
+- Watermark PDF: https://pdf.aixuno.com/watermark-pdf
+- Sign PDF: https://pdf.aixuno.com/sign-pdf
+- Protect PDF: https://pdf.aixuno.com/protect-pdf
+- Unlock PDF: https://pdf.aixuno.com/unlock-pdf
+- OCR text: https://pdf.aixuno.com/ocr-text
+- PDF info: https://pdf.aixuno.com/pdf-info
+
+## Convert
+
+- PDF to JPG: https://pdf.aixuno.com/pdf-to-jpg
+- PDF to PNG: https://pdf.aixuno.com/pdf-to-png
+- JPG to PDF: https://pdf.aixuno.com/jpg-to-pdf
+- PNG to PDF: https://pdf.aixuno.com/png-to-pdf
+- Image to PDF: https://pdf.aixuno.com/image-to-pdf
+
+## Key facts
+
+- Processing runs on the user's device; documents never leave the browser.
+- No account, no upload limit, no watermark on output.
+- Powered by PDF.js and WebAssembly workers loaded on demand.
+
+## Related Aixuno sites
+
+- https://aixuno.com — Markdown and document conversion
+- https://image.aixuno.com — image editing and conversion
+- https://compress.aixuno.com — file compressor
+- https://bg.aixuno.com — background removal
