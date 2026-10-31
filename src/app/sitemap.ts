@@ -4,8 +4,8 @@ import { BUILT_TOOL_SLUGS } from "@/config/built-tools";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://pdf.aixuno.com";
-  // 固定最后修改时间，保证静态导出的 sitemap 内容确定
-  const lastModified = new Date("2026-08-01");
+  // 固定最后修改时间，保证静态导出的 sitemap 内容确定；内容变更时手动更新
+  const lastModified = new Date("2026-11-01");
 
   // 静态页面
   const staticPages = [
