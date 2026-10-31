@@ -62,9 +62,9 @@ export function ToolLayout({
                 "@context": "https://schema.org",
                 "@type": "BreadcrumbList",
                 itemListElement: [
-                  { "@type": "ListItem", position: 1, name: "首页", item: "https://pdfbzy.com" },
-                  { "@type": "ListItem", position: 2, name: "PDF 工具", item: "https://pdfbzy.com/tools" },
-                  { "@type": "ListItem", position: 3, name: tool.name, item: `https://pdfbzy.com/${tool.slug}` },
+                  { "@type": "ListItem", position: 1, name: "首页", item: "https://pdf.aixuno.com" },
+                  { "@type": "ListItem", position: 2, name: "PDF 工具", item: "https://pdf.aixuno.com/tools" },
+                  { "@type": "ListItem", position: 3, name: tool.name, item: `https://pdf.aixuno.com/${tool.slug}` },
                 ],
               }),
             }}
@@ -127,7 +127,7 @@ export function ToolLayout({
                 "@context": "https://schema.org",
                 "@type": "SoftwareApplication",
                 name: `PDFBzy ${tool.name} 在线工具`,
-                url: `https://pdfbzy.com/${tool.slug}`,
+                url: `https://pdf.aixuno.com/${tool.slug}`,
                 applicationCategory: "UtilitiesApplication",
                 operatingSystem: "Any",
                 offers: { "@type": "Offer", price: "0", priceCurrency: "CNY" },

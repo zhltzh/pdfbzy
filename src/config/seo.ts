@@ -16,12 +16,12 @@ export function getToolMetadata(slug: string): Metadata {
     title: tool.name,
     description: desc,
     alternates: {
-      canonical: `https://pdfbzy.com/${slug}`,
+      canonical: `https://pdf.aixuno.com/${slug}`,
     },
     openGraph: {
       title: `${tool.name} - 免费在线工具 | PDFBzy`,
       description: desc,
-      url: `https://pdfbzy.com/${slug}`,
+      url: `https://pdf.aixuno.com/${slug}`,
       siteName: "PDFBzy",
       type: "website",
       locale: "zh_CN",

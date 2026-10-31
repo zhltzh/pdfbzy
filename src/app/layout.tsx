@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   authors: [{ name: "PDFBzy" }],
   creator: "PDFBzy",
   publisher: "PDFBzy",
-  metadataBase: new URL("https://pdfbzy.com"),
+  metadataBase: new URL("https://pdf.aixuno.com"),
   alternates: {
     canonical: "/",
   },
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     title: "PDFBzy - 免费在线 PDF 工具",
     description:
       `${BUILT_TOOL_COUNT}+ 种免费在线 PDF 工具，合并、拆分、转换、编辑、签名，无需注册，浏览器本地处理，保护隐私。`,
-    url: "https://pdfbzy.com",
+    url: "https://pdf.aixuno.com",
     siteName: "PDFBzy",
     type: "website",
     locale: "zh_CN",
@@ -81,13 +81,13 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: "PDFBzy",
-              url: "https://pdfbzy.com",
+              url: "https://pdf.aixuno.com",
               description: "免费在线 PDF 工具平台",
               potentialAction: {
                 "@type": "SearchAction",
                 target: {
                   "@type": "EntryPoint",
-                  urlTemplate: "https://pdfbzy.com/search?q={search_term_string}",
+                  urlTemplate: "https://pdf.aixuno.com/search?q={search_term_string}",
                 },
                 "query-input": "required name=search_term_string",
               },

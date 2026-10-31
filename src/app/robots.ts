@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://pdfbzy.com/sitemap.xml",
+    sitemap: "https://pdf.aixuno.com/sitemap.xml",
   };
 }

@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   title: "使用条款",
   description:
     "PDFBzy 使用条款：免费在线 PDF 工具服务的使用规则、免责声明与用户责任说明。",
-  alternates: { canonical: "https://pdfbzy.com/terms" },
+  alternates: { canonical: "https://pdf.aixuno.com/terms" },
 };
 
 export default function TermsPage() {

@@ -14,11 +14,11 @@ export const metadata: Metadata = {
   },
   description:
     `PDFBzy 提供 ${BUILT_TOOL_COUNT}+ 种免费在线 PDF 工具，包括合并、拆分、压缩、转换、编辑、签名等功能。全部免费使用，无需注册，浏览器本地处理。`,
-  alternates: { canonical: "https://pdfbzy.com/tools" },
+  alternates: { canonical: "https://pdf.aixuno.com/tools" },
   openGraph: {
     title: "所有 PDF 在线工具 - PDFBzy",
     description: `${BUILT_TOOL_COUNT}+ 种免费在线 PDF 工具，全部在浏览器本地处理，保护隐私。`,
-    url: "https://pdfbzy.com/tools",
+    url: "https://pdf.aixuno.com/tools",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "PDFBzy 所有 PDF 在线工具" }],
   },
 };

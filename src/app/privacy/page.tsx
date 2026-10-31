@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   title: "隐私政策",
   description:
     "PDFBzy 隐私政策：所有 PDF 处理在浏览器本地完成，文件不上传服务器，我们不会收集、存储或分享你的文档数据。",
-  alternates: { canonical: "https://pdfbzy.com/privacy" },
+  alternates: { canonical: "https://pdf.aixuno.com/privacy" },
 };
 
 export default function PrivacyPage() {

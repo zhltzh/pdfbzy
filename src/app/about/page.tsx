@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "关于我们",
   description:
     `PDFBzy 是一个免费在线 PDF 工具平台，提供合并、拆分、转换、编辑、签名等 ${BUILT_TOOL_COUNT}+ 种 PDF 处理工具。所有工具在浏览器本地运行，无需注册，保护用户隐私。`,
-  alternates: { canonical: "https://pdfbzy.com/about" },
+  alternates: { canonical: "https://pdf.aixuno.com/about" },
 };
 
 export default function AboutPage() {

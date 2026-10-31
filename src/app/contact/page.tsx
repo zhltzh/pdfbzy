@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   title: "联系我们",
   description:
     "联系 PDFBzy 团队：如有建议、问题反馈或合作意向，欢迎随时联系我们。",
-  alternates: { canonical: "https://pdfbzy.com/contact" },
+  alternates: { canonical: "https://pdf.aixuno.com/contact" },
 };
 
 export default function ContactPage() {
