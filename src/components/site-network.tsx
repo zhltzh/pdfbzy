@@ -1,11 +1,13 @@
 import { AIXUNO_SITES, CURRENT_SITE } from "@/config/sites";
+import { ShareLinks } from "@/components/share-links";
 
 export function SiteNetwork() {
   return (
     <section aria-label="Aixuno 工具" className="mt-8 border-t pt-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Aixuno 工具</p>
-        <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
           {AIXUNO_SITES.map((site) => (
             <li key={site.id}>
               {site.id === CURRENT_SITE ? (
@@ -20,6 +22,8 @@ export function SiteNetwork() {
             </li>
           ))}
         </ul>
+          <ShareLinks />
+        </div>
       </div>
     </section>
   );
