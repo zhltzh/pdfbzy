@@ -2,6 +2,8 @@
 
 > Free browser-based PDF toolkit: merge, split, compress, rotate, unlock, sign and convert PDF files. Documents are processed locally in the browser and are never uploaded to an Aixuno server.
 
+> Full text of every page (28 pages): https://pdf.aixuno.com/llms-full.txt
+
 ## Site
 
 - Name: Aixuno PDF
