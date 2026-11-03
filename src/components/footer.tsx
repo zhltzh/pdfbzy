@@ -2,7 +2,7 @@ import Link from "next/link";
 import { FileText } from "lucide-react";
 import { categories, availableTools, getToolBySlug } from "@/config/tools";
 import { BUILT_TOOL_SLUGS } from "@/config/built-tools";
-import { SiteNetwork } from "@/components/site-network";
+import { ShareLinks } from "@/components/share-links";
 
 // 已构建的工具（避免链接到未开发页面）
 const builtTools = availableTools.filter((t) =>
@@ -80,7 +80,9 @@ export function Footer() {
           </div>
         </div>
 
-        <SiteNetwork />
+        <div className="mt-6 border-t border-gray-200 pt-6">
+          <ShareLinks />
+        </div>
       </div>
     </footer>
   );

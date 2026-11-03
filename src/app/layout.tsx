@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { SiteNetwork } from "@/components/site-network";
 import { BUILT_TOOL_COUNT } from "@/config/built-tools";
 
 export const metadata: Metadata = {
@@ -116,6 +117,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <div className="flex min-h-screen flex-col">
+          <SiteNetwork />
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
