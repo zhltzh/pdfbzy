@@ -173,6 +173,27 @@ export default function Home() {
         </div>
       </section>
 
+
+      {/* ===== 界面预览 ===== */}
+      <section className="border-t bg-gray-50/50 py-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <figure className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <img
+              src="/tools-overview.webp"
+              alt="PDFBzy 工具总览界面：合并、拆分、压缩、转换、编辑等 PDF 工具按用途分组排列"
+              width="2560"
+              height="4134"
+              loading="lazy"
+              decoding="async"
+              className="h-auto w-full"
+            />
+          </figure>
+          <p className="mt-4 text-center text-sm text-gray-500">
+            22 个工具按用途分组，从编辑、转换到安全保护，都在同一个站点完成。
+          </p>
+        </div>
+      </section>
+
       {/* ===== 使用流程 ===== */}
       <section className="border-t bg-white py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
