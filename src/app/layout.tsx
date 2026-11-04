@@ -95,6 +95,31 @@ export default function RootLayout({
             }),
           }}
         />
+        {/* 组织标识 JSON-LD：与主站共享同一实体 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "@id": "https://aixuno.com/#organization",
+              name: "Aixuno",
+              url: "https://aixuno.com/",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://aixuno.com/apple-touch-icon.png",
+                width: 180,
+                height: 180,
+              },
+              sameAs: ["https://github.com/zhltzh/pdfbzy"],
+              subOrganization: {
+                "@type": "Organization",
+                name: "PDFBzy",
+                url: "https://pdf.aixuno.com/",
+              },
+            }),
+          }}
+        />
         {/* 软件应用 JSON-LD */}
         <script
           type="application/ld+json"
@@ -111,6 +136,25 @@ export default function RootLayout({
                 priceCurrency: "CNY",
               },
               description: `免费在线 PDF 工具平台，提供合并、拆分、转换、编辑、签名等 ${BUILT_TOOL_COUNT}+ 种 PDF 处理工具。`,
+              featureList: [
+                "合并 PDF",
+                "拆分 PDF",
+                "压缩 PDF",
+                "PDF 转图片",
+                "图片转 PDF",
+                "旋转与重排页面",
+                "加密与解密",
+                "添加水印与页码",
+                "OCR 文字识别",
+                "电子签名",
+              ],
+              isAccessibleForFree: true,
+              screenshot: {
+                "@type": "ImageObject",
+                url: "https://pdf.aixuno.com/screenshot.png",
+                width: 1280,
+                height: 800,
+              },
             }),
           }}
         />
