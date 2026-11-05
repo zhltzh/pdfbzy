@@ -198,9 +198,12 @@ export function FileUpload({
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
         className={cn(
-          "relative cursor-pointer rounded-2xl border-2 border-dashed p-10 transition-all duration-200",
+          "relative cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200",
+          files.length > 0 ? "p-5" : "p-10",
           isDragOver
             ? "border-primary bg-primary/5 scale-[1.01]"
+            : files.length > 0
+            ? "border-green-300 bg-green-50/40 hover:border-green-400 hover:bg-green-50/60"
             : "border-gray-200 bg-white/50 hover:border-primary/50 hover:bg-gray-50/50",
           error && "border-red-200 bg-red-50/30"
         )}
@@ -213,36 +216,57 @@ export function FileUpload({
           className="hidden"
           onChange={handleInputChange}
         />
-        <div className="flex flex-col items-center text-center">
-          <div
-            className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-2xl mb-4 transition-all",
-              isDragOver
-                ? "bg-primary/20 scale-110"
-                : "bg-gray-100"
-            )}
-          >
-            <Upload
-              className={cn(
-                "h-7 w-7 transition-colors",
-                isDragOver ? "text-primary" : "text-gray-400"
-              )}
-            />
+        {files.length > 0 ? (
+          /* 已选择文件状态：直接在上传框内显示文件，不再显示「点击选择」 */
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-green-100">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-gray-800">
+                {files.length === 1 ? files[0].name : `已选择 ${files.length} 个文件`}
+              </p>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {files.length === 1 && `共 ${formatFileSize(files[0].size)} · `}
+                {multiple ? "点击继续添加，或拖入更多文件" : "点击更换文件"}
+              </p>
+            </div>
+            <span className="flex-shrink-0 rounded-lg bg-white/80 px-2.5 py-1.5 text-xs font-medium text-green-700 border border-green-200">
+              {multiple ? "继续添加" : "更换"}
+            </span>
           </div>
-          <p className="text-base font-medium text-gray-700">
-            <span className="text-primary">点击选择文件</span>
-            {" 或拖拽文件到此处"}
-          </p>
-          <p className="mt-1.5 text-sm text-gray-400">
-            支持 {acceptDescriptionText} 格式
-            {maxSizeMB < 100 && `，单文件最大 ${maxSizeMB}MB`}
-          </p>
-          {multiple && (
-            <p className="mt-0.5 text-xs text-gray-300">
-              最多 {maxFiles} 个文件
+        ) : (
+          <div className="flex flex-col items-center text-center">
+            <div
+              className={cn(
+                "flex h-14 w-14 items-center justify-center rounded-2xl mb-4 transition-all",
+                isDragOver
+                  ? "bg-primary/20 scale-110"
+                  : "bg-gray-100"
+              )}
+            >
+              <Upload
+                className={cn(
+                  "h-7 w-7 transition-colors",
+                  isDragOver ? "text-primary" : "text-gray-400"
+                )}
+              />
+            </div>
+            <p className="text-base font-medium text-gray-700">
+              <span className="text-primary">点击选择文件</span>
+              {" 或拖拽文件到此处"}
             </p>
-          )}
-        </div>
+            <p className="mt-1.5 text-sm text-gray-400">
+              支持 {acceptDescriptionText} 格式
+              {maxSizeMB < 100 && `，单文件最大 ${maxSizeMB}MB`}
+            </p>
+            {multiple && (
+              <p className="mt-0.5 text-xs text-gray-300">
+                最多 {maxFiles} 个文件
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 文件列表 */}

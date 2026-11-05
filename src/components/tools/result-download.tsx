@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Download, FileText, CheckCircle, RotateCcw, Package } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Download, FileText, CheckCircle, RotateCcw, Package, UploadCloud } from "lucide-react";
 import { zipSync } from "fflate";
 import { formatFileSize, downloadFile, cn } from "@/lib/utils";
 
@@ -16,15 +16,22 @@ interface ResultDownloadProps {
   onReset: () => void;
   /** 是否启用打包下载（多个文件时用一个 zip） */
   enableBatchDownload?: boolean;
+  /** 拖入新文件时直接开始下一轮处理 */
+  onDropFiles?: (files: File[]) => void;
+  /** 拖拽区接受的扩展名 */
+  accept?: string;
 }
 
 export function ResultDownload({
   results,
   onReset,
   enableBatchDownload = true,
+  onDropFiles,
+  accept = ".pdf",
 }: ResultDownloadProps) {
   const [downloaded, setDownloaded] = useState<Set<number>>(new Set());
   const [isBatchDownloading, setIsBatchDownloading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // results 变化（重新处理/新一批文件）时重置下载状态，避免索引错位
   useEffect(() => {
@@ -87,21 +94,80 @@ export function ResultDownload({
 
   const allDownloaded = downloaded.size === results.length;
 
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (onDropFiles) setIsDragOver(true);
+    },
+    [onDropFiles]
+  );
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      if (!onDropFiles) return;
+      const dropped = Array.from(e.dataTransfer.files);
+      if (dropped.length > 0) onDropFiles(dropped);
+    },
+    [onDropFiles]
+  );
+
   return (
     <div className="animate-fade-in">
-      {/* 成功标识 */}
-      <div className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 p-5">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
-          <CheckCircle className="h-6 w-6 text-green-600" />
+      {/* 成功标识 + 置顶下载 */}
+      <div className="mb-6 flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-green-800">处理完成！</h3>
+            <p className="text-sm text-green-600">
+              共生成 {results.length} 个文件，总计 {formatFileSize(totalSize)}
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold text-green-800">
-            处理完成！
-          </h3>
-          <p className="text-sm text-green-600">
-            共生成 {results.length} 个文件，总计 {formatFileSize(totalSize)}
-          </p>
-        </div>
+        <button
+          onClick={handleDownloadAll}
+          disabled={isBatchDownloading || allDownloaded}
+          className={cn(
+            "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all flex-shrink-0",
+            allDownloaded
+              ? "bg-white/70 text-gray-400 cursor-default"
+              : "bg-primary text-white shadow-sm hover:bg-primary/90 active:scale-[0.98]"
+          )}
+        >
+          {isBatchDownloading ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              打包中...
+            </>
+          ) : allDownloaded ? (
+            <>
+              <CheckCircle className="h-4 w-4" />
+              全部已下载
+            </>
+          ) : results.length > 1 ? (
+            <>
+              <Package className="h-4 w-4" />
+              下载全部 ({results.length})
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4" />
+              下载文件
+            </>
+          )}
+        </button>
       </div>
 
       {/* 文件列表 */}
@@ -139,46 +205,38 @@ export function ResultDownload({
         ))}
       </div>
 
-      {/* 操作按钮 */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={handleDownloadAll}
-          disabled={isBatchDownloading}
-          className={cn(
-            "flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all",
-            allDownloaded
-              ? "bg-gray-100 text-gray-400 cursor-default"
-              : "bg-primary text-white shadow-sm hover:bg-primary/90 active:scale-[0.98]"
-          )}
-        >
-          {isBatchDownloading ? (
-            <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              打包中...
-            </>
-          ) : allDownloaded ? (
-            <>
-              <CheckCircle className="h-4 w-4" />
-              全部已下载
-            </>
-          ) : results.length > 1 ? (
-            <>
-              <Package className="h-4 w-4" />
-              下载全部 ({results.length} 个文件)
-            </>
-          ) : (
-            <>
-              <Download className="h-4 w-4" />
-              下载文件
-            </>
-          )}
-        </button>
+      {/* 继续处理：拖拽即开始下一轮 */}
+      <div className="mt-5 space-y-3">
+        {onDropFiles && (
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={onReset}
+            className={cn(
+              "flex cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-5 py-6 text-center transition-all",
+              isDragOver
+                ? "border-primary bg-primary/5 scale-[1.01]"
+                : "border-gray-200 bg-white/60 hover:border-primary/50 hover:bg-gray-50/60"
+            )}
+          >
+            <UploadCloud className={cn("h-6 w-6 flex-shrink-0", isDragOver ? "text-primary" : "text-gray-400")} />
+            <div className="text-left">
+              <p className="text-sm font-medium text-gray-700">
+                {isDragOver ? "松开即可开始处理新文件" : "直接拖入新的文件，继续处理"}
+              </p>
+              <p className="mt-0.5 text-xs text-gray-400">
+                也可以点击这里回到上传区 · 支持 {accept.split(",").map((a) => a.trim().replace(".", "").toUpperCase()).join("、")}
+              </p>
+            </div>
+          </div>
+        )}
         <button
           onClick={onReset}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border px-6 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all active:scale-[0.98]"
+          className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border px-6 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all active:scale-[0.98]"
         >
           <RotateCcw className="h-4 w-4" />
-          继续处理
+          重新开始
         </button>
       </div>
     </div>
