@@ -59,7 +59,7 @@ export default function WatermarkPDFPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const runWatermark = useCallback(async (targetFiles: File[]) => {
+  const runWatermark = useCallback(async (targetFiles: File[], append = false) => {
     if (targetFiles.length === 0) {
       setError("请先上传需要添加水印的 PDF 文件。");
       return;
@@ -107,7 +107,7 @@ export default function WatermarkPDFPage() {
       }
 
       if (out.length === 0) throw new Error("所有文件都处理失败。");
-      setResults(out);
+      setResults((prev) => (append && prev ? [...prev, ...out] : out));
       if (failed.length > 0) {
         setError(`${failed.length} 个文件处理失败：${failed.join("、")}。其余已成功。`);
       }
@@ -129,19 +129,22 @@ export default function WatermarkPDFPage() {
 
   const handleProcess = useCallback(() => runWatermark(files), [runWatermark, files]);
 
-  /** 从结果页拖入新文件：沿用当前水印设置直接开始处理 */
+  /** 从结果页拖入新文件：沿用当前水印设置直接开始处理，结果追加到现有列表 */
   const handleDropAndRun = useCallback(
     (dropped: File[]) => {
+      if (isProcessing) return;
       const next = dropped.slice(0, 10);
       if (next.length === 0) return;
       setFiles(next);
-      setResults(null);
       setError(null);
       // 水印文字为空时不自动处理，退回让用户补参数
-      if (!text.trim()) return;
-      void runWatermark(next);
+      if (!text.trim()) {
+        setResults(null);
+        return;
+      }
+      void runWatermark(next, true);
     },
-    [runWatermark, text]
+    [isProcessing, runWatermark, text]
   );
 
   return (
@@ -313,6 +316,8 @@ export default function WatermarkPDFPage() {
           results={results}
           onReset={handleClear}
           onDropAndRun={handleDropAndRun}
+          error={error}
+          busy={isProcessing}
           accept=".pdf"
           dropHint="沿用当前水印设置"
         />

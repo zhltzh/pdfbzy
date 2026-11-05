@@ -66,7 +66,7 @@ export default function PageNumberPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const runProcess = useCallback(async (targetFiles: File[]) => {
+  const runProcess = useCallback(async (targetFiles: File[], append = false) => {
     if (targetFiles.length === 0) {
       setError("请先上传需要添加页码的 PDF 文件。");
       return;
@@ -110,7 +110,7 @@ export default function PageNumberPage() {
       }
 
       if (out.length === 0) throw new Error("所有文件都处理失败。");
-      setResults(out);
+      setResults((prev) => (append && prev ? [...prev, ...out] : out));
       if (failed.length > 0) {
         setError(`${failed.length} 个文件处理失败：${failed.join("、")}。其余已成功。`);
       }
@@ -132,17 +132,17 @@ export default function PageNumberPage() {
 
   const handleProcess = useCallback(() => runProcess(files), [runProcess, files]);
 
-  /** 从结果页拖入新文件：沿用当前页码设置直接开始处理 */
+  /** 从结果页拖入新文件：沿用当前页码设置直接开始处理，结果追加到现有列表 */
   const handleDropAndRun = useCallback(
     (dropped: File[]) => {
+      if (isProcessing) return;
       const next = dropped.slice(0, 10);
       if (next.length === 0) return;
       setFiles(next);
-      setResults(null);
       setError(null);
-      void runProcess(next);
+      void runProcess(next, true);
     },
-    [runProcess]
+    [isProcessing, runProcess]
   );
 
   return (
@@ -284,6 +284,8 @@ export default function PageNumberPage() {
           results={results}
           onReset={handleClear}
           onDropAndRun={handleDropAndRun}
+          error={error}
+          busy={isProcessing}
           accept=".pdf"
           dropHint="沿用当前页码设置"
         />

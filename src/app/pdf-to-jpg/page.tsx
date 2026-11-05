@@ -60,7 +60,7 @@ export default function PDFToJPGPage() {
     prevCount.current = files.length;
   }, [files.length]);
 
-  const runConvert = useCallback(async (targetFiles: File[]) => {
+  const runConvert = useCallback(async (targetFiles: File[], append = false) => {
     if (targetFiles.length === 0) {
       setError("请先选择要转换的 PDF 文件。");
       return;
@@ -101,7 +101,7 @@ export default function PDFToJPGPage() {
       }
 
       if (converted.length === 0) throw new Error("未能生成任何图片。");
-      setResults(converted);
+      setResults((prev) => (append && prev ? [...prev, ...converted] : converted));
       setProgress("");
     } catch (err: any) {
       console.error("Convert failed:", err);
@@ -120,17 +120,17 @@ export default function PDFToJPGPage() {
 
   const handleConvert = useCallback(() => runConvert(files), [runConvert, files]);
 
-  /** 从结果页拖入新文件：直接开始转换，无需再点按钮 */
+  /** 从结果页拖入新文件：直接开始转换，结果追加到现有列表 */
   const handleDropAndRun = useCallback(
     (dropped: File[]) => {
+      if (isProcessing) return;
       const next = dropped.slice(0, MAX_FILES);
       if (next.length === 0) return;
       setFiles(next);
-      setResults(null);
       setError(null);
-      void runConvert(next);
+      void runConvert(next, true);
     },
-    [runConvert]
+    [isProcessing, runConvert]
   );
 
   return (
@@ -223,6 +223,8 @@ export default function PDFToJPGPage() {
           results={results}
           onReset={handleClear}
           onDropAndRun={handleDropAndRun}
+          error={error}
+          busy={isProcessing}
           accept=".pdf"
         />
       )}

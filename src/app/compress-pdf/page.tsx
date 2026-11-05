@@ -86,7 +86,7 @@ export default function CompressPDFPage() {
     prevCount.current = files.length;
   }, [files.length]);
 
-  const runCompress = useCallback(async (targetFiles: File[]) => {
+  const runCompress = useCallback(async (targetFiles: File[], append = false) => {
     if (targetFiles.length === 0) {
       setError("请先选择要压缩的 PDF 文件。");
       return;
@@ -126,7 +126,7 @@ export default function CompressPDFPage() {
       if (out.length === 0) {
         throw new Error("所有文件都压缩失败，请更换压缩档位重试。");
       }
-      setResults(out);
+      setResults((prev) => (append && prev ? [...prev, ...out] : out));
       if (failed.length > 0) {
         setError(`${failed.length} 个文件压缩失败：${failed.join("、")}。其余已成功。`);
       }
@@ -148,17 +148,17 @@ export default function CompressPDFPage() {
 
   const handleCompress = useCallback(() => runCompress(files), [runCompress, files]);
 
-  /** 从结果页拖入新文件：沿用当前压缩档位直接开始处理 */
+  /** 从结果页拖入新文件：沿用当前压缩档位直接开始处理，结果追加到现有列表 */
   const handleDropAndRun = useCallback(
     (dropped: File[]) => {
+      if (isProcessing) return;
       const next = dropped.slice(0, MAX_FILES);
       if (next.length === 0) return;
       setFiles(next);
-      setResults(null);
       setError(null);
-      void runCompress(next);
+      void runCompress(next, true);
     },
-    [runCompress]
+    [isProcessing, runCompress]
   );
 
   return (
@@ -249,6 +249,8 @@ export default function CompressPDFPage() {
           results={results}
           onReset={handleClear}
           onDropAndRun={handleDropAndRun}
+          error={error}
+          busy={isProcessing}
           accept=".pdf"
           dropHint="沿用当前压缩档位"
         />

@@ -62,7 +62,7 @@ export default function UnlockPdfPage() {
     setError(null);
   }, []);
 
-  const runUnlock = useCallback(async (targetFiles: File[], pwd: string) => {
+  const runUnlock = useCallback(async (targetFiles: File[], pwd: string, append = false) => {
     setIsProcessing(true);
     setError(null);
 
@@ -97,7 +97,7 @@ export default function UnlockPdfPage() {
       if (out.length === 0) {
         throw new Error("所有文件都解密失败，请确认密码是否正确。");
       }
-      setResults(out);
+      setResults((prev) => (append && prev ? [...prev, ...out] : out));
       if (failed.length > 0) {
         setError(`${failed.length} 个文件解密失败：${failed.join("、")}。其余已成功。`);
       }
@@ -135,15 +135,15 @@ export default function UnlockPdfPage() {
   }, [files, password, encryptionStatus.isEncrypted, runUnlock]);
 
   /**
-   * 从结果页拖入新文件：未加密时直接开始处理。
+   * 从结果页拖入新文件：未加密时直接开始处理，结果追加到现有列表。
    * 若检测到加密，退回只填文件，由用户输入密码后再点按钮。
    */
   const handleDropAndRun = useCallback(
     async (dropped: File[]) => {
+      if (isProcessing) return;
       const next = dropped.slice(0, 10);
       if (next.length === 0) return;
       setFiles(next);
-      setResults(null);
       setError(null);
       setPassword("");
 
@@ -156,13 +156,19 @@ export default function UnlockPdfPage() {
       } catch {
         // 无法解析（损坏/非 PDF）时不要误判为"加密"，置为检测失败
         setEncryptionStatus({ checked: true, isEncrypted: false, checkFailed: true });
+        // 无法自动处理：回到上传区
+        setResults(null);
         return;
       }
 
-      if (isEncrypted) return;
-      await runUnlock(next, "");
+      if (isEncrypted) {
+        // 需要用户输入密码：回到上传区
+        setResults(null);
+        return;
+      }
+      await runUnlock(next, "", true);
     },
-    [runUnlock]
+    [isProcessing, runUnlock]
   );
 
   return (
@@ -263,6 +269,8 @@ export default function UnlockPdfPage() {
           results={results}
           onReset={handleClear}
           onDropAndRun={handleDropAndRun}
+          error={error}
+          busy={isProcessing}
           accept=".pdf"
           dropHint="未加密的文件会立即开始解锁"
         />

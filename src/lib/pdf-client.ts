@@ -635,6 +635,10 @@ export async function pdfToImages(
     data: new Uint8Array(fileBuffer),
     isEvalSupported: false,
     disableFontFace: true,
+    // disableFontFace 时 PDF.js 只能靠字形轮廓绘制文字，未内嵌的标准字体（Helvetica/Times/Courier 等）
+    // 必须由 standardFontDataUrl 提供的 .pfb/.ttf 字体数据生成路径，否则整页文字会被忽略渲染成白页。
+    // 资源来自 node_modules/pdfjs-dist/standard_fonts/，已复制到 public/pdfjs-standard-fonts/。
+    standardFontDataUrl: "/pdfjs-standard-fonts/",
   }).promise;
   const totalPages = doc.numPages;
   const images: { blob: Blob; pageNumber: number }[] = [];

@@ -74,7 +74,7 @@ export default function ProtectPdfPage() {
   }, []);
 
   const runProtect = useCallback(
-    async (targetFiles: File[]) => {
+    async (targetFiles: File[], append = false) => {
       if (targetFiles.length === 0) {
         setError("请先选择一个 PDF 文件。");
         return;
@@ -124,7 +124,7 @@ export default function ProtectPdfPage() {
         }
 
         if (out.length === 0) throw new Error("所有文件都加密失败。");
-        setResults(out);
+        setResults((prev) => (append && prev ? [...prev, ...out] : out));
         if (failed.length > 0) {
           setError(`${failed.length} 个文件加密失败：${failed.join("、")}。其余已成功。`);
         }
@@ -143,25 +143,30 @@ export default function ProtectPdfPage() {
   const handleProtect = useCallback(() => runProtect(files), [runProtect, files]);
 
   /**
-   * 从结果页拖入新文件：沿用当前密码直接加密。
+   * 从结果页拖入新文件：沿用当前密码直接加密，结果追加到现有列表。
    * 密码不完整或文件已加密时，退回只填文件（需用户确认参数后再点按钮）。
    */
   const handleDropAndRun = useCallback(
     async (dropped: File[]) => {
+      if (isProcessing) return;
       const next = dropped.slice(0, MAX_FILES);
       if (next.length === 0) return;
       setFiles(next);
-      setResults(null);
       setError(null);
 
       const passwordReady =
         !!password && password === confirmPassword && password.length >= 6;
-      if (!passwordReady) return;
+      if (!passwordReady) {
+        // 无法自动处理：回到上传区让用户补全密码
+        setResults(null);
+        return;
+      }
 
       try {
         const buffer = await next[0].arrayBuffer();
         const info = await checkPDFEncryption(buffer);
         if (info.isEncrypted) {
+          setResults(null);
           setError("该文件已有密码保护。如需重新加密，请先使用「解密 PDF」工具解锁后再操作。");
           return;
         }
@@ -169,9 +174,9 @@ export default function ProtectPdfPage() {
         // 忽略解析失败，由加密流程兜底报错
       }
 
-      void runProtect(next);
+      void runProtect(next, true);
     },
-    [password, confirmPassword, runProtect]
+    [isProcessing, password, confirmPassword, runProtect]
   );
 
   return (
@@ -256,6 +261,8 @@ export default function ProtectPdfPage() {
           results={results}
           onReset={handleClear}
           onDropAndRun={handleDropAndRun}
+          error={error}
+          busy={isProcessing}
           accept=".pdf"
           dropHint="将使用当前密码"
         />

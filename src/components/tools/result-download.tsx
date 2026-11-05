@@ -24,6 +24,10 @@ interface ResultDownloadProps {
   accept?: string;
   /** 拖拽区补充提示，如「将使用当前密码」 */
   dropHint?: string;
+  /** 追加处理失败时的错误提示（结果页仍展示，不能静默丢弃） */
+  error?: string | null;
+  /** 是否有处理正在进行：为 true 时忽略新的拖入，避免并发流程 */
+  busy?: boolean;
 }
 
 export function ResultDownload({
@@ -34,6 +38,8 @@ export function ResultDownload({
   onDropAndRun,
   accept = ".pdf",
   dropHint,
+  error,
+  busy = false,
 }: ResultDownloadProps) {
   const [downloaded, setDownloaded] = useState<Set<number>>(new Set());
   const [isBatchDownloading, setIsBatchDownloading] = useState(false);
@@ -70,7 +76,18 @@ export function ResultDownload({
         // 使用 fflate 将多个文件打包为一个 zip 下载
         const files: Record<string, Uint8Array> = {};
         for (const file of results) {
-          files[file.name] = new Uint8Array(await file.blob.arrayBuffer());
+          // 追加的结果可能出现同名文件，zip 内重名会互相覆盖，这里按需加序号区分
+          let name = file.name;
+          let n = 1;
+          while (files[name]) {
+            const dot = file.name.lastIndexOf(".");
+            name =
+              dot > 0
+                ? `${file.name.slice(0, dot)}-${n}${file.name.slice(dot)}`
+                : `${file.name}-${n}`;
+            n++;
+          }
+          files[name] = new Uint8Array(await file.blob.arrayBuffer());
         }
         const zipped = zipSync(files);
         const zipBlob = new Blob([zipped], { type: "application/zip" });
@@ -107,9 +124,9 @@ export function ResultDownload({
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (dropHandler) setIsDragOver(true);
+      if (dropHandler && !busy) setIsDragOver(true);
     },
-    [dropHandler]
+    [dropHandler, busy]
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -123,15 +140,22 @@ export function ResultDownload({
       e.preventDefault();
       e.stopPropagation();
       setIsDragOver(false);
+      if (busy) return;
       if (!dropHandler) return;
       const dropped = Array.from(e.dataTransfer.files);
       if (dropped.length > 0) dropHandler(dropped);
     },
-    [dropHandler]
+    [dropHandler, busy]
   );
 
   return (
     <div className="animate-fade-in">
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
       {/* 成功标识 + 置顶下载 */}
       <div className="mb-6 flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
@@ -145,38 +169,46 @@ export function ResultDownload({
             </p>
           </div>
         </div>
-        <button
-          onClick={handleDownloadAll}
-          disabled={isBatchDownloading || allDownloaded}
-          className={cn(
-            "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all flex-shrink-0",
-            allDownloaded
-              ? "bg-white/70 text-gray-400 cursor-default"
-              : "bg-primary text-white shadow-sm hover:bg-primary/90 active:scale-[0.98]"
-          )}
-        >
-          {isBatchDownloading ? (
-            <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              打包中...
-            </>
-          ) : allDownloaded ? (
-            <>
-              <CheckCircle className="h-4 w-4" />
-              全部已下载
-            </>
-          ) : results.length > 1 ? (
-            <>
-              <Package className="h-4 w-4" />
-              下载全部 ({results.length})
-            </>
-          ) : (
-            <>
-              <Download className="h-4 w-4" />
-              下载文件
-            </>
-          )}
-        </button>
+        <div className="flex flex-shrink-0 items-center gap-3">
+          <button
+            onClick={handleDownloadAll}
+            disabled={isBatchDownloading || allDownloaded}
+            className={cn(
+              "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all flex-shrink-0",
+              allDownloaded
+                ? "bg-white/70 text-gray-400 cursor-default"
+                : "bg-primary text-white shadow-sm hover:bg-primary/90 active:scale-[0.98]"
+            )}
+          >
+            {isBatchDownloading ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                打包中...
+              </>
+            ) : allDownloaded ? (
+              <>
+                <CheckCircle className="h-4 w-4" />
+                全部已下载
+              </>
+            ) : results.length > 1 ? (
+              <>
+                <Package className="h-4 w-4" />
+                下载全部 ({results.length})
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                下载文件
+              </>
+            )}
+          </button>
+          <button
+            onClick={onReset}
+            className="whitespace-nowrap text-xs font-medium text-gray-400 transition-colors hover:text-gray-600 hover:underline"
+          >
+            清空全部
+          </button>
+        </div>
       </div>
 
       {/* 文件列表 */}
@@ -223,19 +255,28 @@ export function ResultDownload({
             onDrop={handleDrop}
             onClick={onReset}
             className={cn(
-              "flex cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-5 py-6 text-center transition-all",
-              isDragOver
-                ? "border-primary bg-primary/5 scale-[1.01]"
-                : "border-gray-200 bg-white/60 hover:border-primary/50 hover:bg-gray-50/60"
+              "flex items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-5 py-6 text-center transition-all",
+              busy
+                ? "cursor-not-allowed border-gray-200 bg-gray-50/60 opacity-60"
+                : isDragOver
+                ? "cursor-pointer border-primary bg-primary/5 scale-[1.01]"
+                : "cursor-pointer border-gray-200 bg-white/60 hover:border-primary/50 hover:bg-gray-50/60"
             )}
           >
-            <UploadCloud className={cn("h-6 w-6 flex-shrink-0", isDragOver ? "text-primary" : "text-gray-400")} />
+            <UploadCloud
+              className={cn(
+                "h-6 w-6 flex-shrink-0",
+                busy ? "text-gray-300" : isDragOver ? "text-primary" : "text-gray-400"
+              )}
+            />
             <div className="text-left">
-              <p className="text-sm font-medium text-gray-700">
-                {isDragOver
+              <p className={cn("text-sm font-medium", busy ? "text-gray-400" : "text-gray-700")}>
+                {busy
+                  ? "正在处理中，请稍候…"
+                  : isDragOver
                   ? "松开即可开始处理新文件"
                   : onDropAndRun
-                  ? "拖入新的文件，立即开始处理"
+                  ? "拖入新的文件，立即处理并追加到列表"
                   : "直接拖入新的文件，继续处理"}
               </p>
               <p className="mt-0.5 text-xs text-gray-400">
