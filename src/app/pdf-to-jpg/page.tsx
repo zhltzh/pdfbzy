@@ -60,8 +60,8 @@ export default function PDFToJPGPage() {
     prevCount.current = files.length;
   }, [files.length]);
 
-  const handleConvert = useCallback(async () => {
-    if (files.length === 0) {
+  const runConvert = useCallback(async (targetFiles: File[]) => {
+    if (targetFiles.length === 0) {
       setError("请先选择要转换的 PDF 文件。");
       return;
     }
@@ -73,9 +73,9 @@ export default function PDFToJPGPage() {
     try {
       const converted: { name: string; blob: Blob; size: number }[] = [];
 
-      for (let fi = 0; fi < files.length; fi++) {
-        const file = files[fi];
-        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+      for (let fi = 0; fi < targetFiles.length; fi++) {
+        const file = targetFiles[fi];
+        const prefix = targetFiles.length > 1 ? `[${fi + 1}/${targetFiles.length}] ` : "";
         setProgress(`${prefix}正在读取 ${file.name}...`);
 
         const buf = await file.arrayBuffer();
@@ -116,7 +116,22 @@ export default function PDFToJPGPage() {
       setProgress("");
       abortRef.current = null;
     }
-  }, [files, scale]);
+  }, [scale]);
+
+  const handleConvert = useCallback(() => runConvert(files), [runConvert, files]);
+
+  /** 从结果页拖入新文件：直接开始转换，无需再点按钮 */
+  const handleDropAndRun = useCallback(
+    (dropped: File[]) => {
+      const next = dropped.slice(0, MAX_FILES);
+      if (next.length === 0) return;
+      setFiles(next);
+      setResults(null);
+      setError(null);
+      void runConvert(next);
+    },
+    [runConvert]
+  );
 
   return (
     <ToolLayout tool={tool}>
@@ -204,7 +219,12 @@ export default function PDFToJPGPage() {
           </div>
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
+        <ResultDownload
+          results={results}
+          onReset={handleClear}
+          onDropAndRun={handleDropAndRun}
+          accept=".pdf"
+        />
       )}
     </ToolLayout>
   );

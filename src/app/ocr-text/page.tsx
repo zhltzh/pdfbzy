@@ -10,6 +10,15 @@ import { pdfToImages } from "@/lib/pdf-client";
 
 const tool = getToolBySlug("ocr-text")!;
 
+const MAX_FILES = 10;
+
+type OCRResult = { name: string; text: string; pages: number };
+
+/** 合并多文件结果，按文件分段，供复制/下载使用 */
+function formatResults(list: OCRResult[]): string {
+  return list.map((r) => `=== ${r.name}（${r.pages} 页）===\n${r.text}`).join("\n\n");
+}
+
 const LANGS = [
   { id: "chi_sim+eng", label: "中文+英文（推荐）", hint: "适合中文为主的文档" },
   { id: "chi_sim", label: "仅中文", hint: "简体中文识别" },
@@ -22,10 +31,13 @@ export default function OCRTextPage() {
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [lang, setLang] = useState<string>("chi_sim+eng");
-  const [result, setResult] = useState<{ text: string; pages: number; source: string } | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [results, setResults] = useState<OCRResult[] | null>(null);
+  const [failures, setFailures] = useState<string[]>([]);
+  const [copied, setCopied] = useState<string | null>(null);
   const workerRef = useRef<any>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // 当前进度上下文（第 X/Y 个文件 · 第 A/B 页），供 tesseract logger 复用
+  const progressCtxRef = useRef("");
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort();
@@ -46,49 +58,62 @@ export default function OCRTextPage() {
   }, []);
 
   const handleFilesSelected = useCallback((newFiles: File[]) => {
-    setFiles(newFiles.slice(0, 1));
+    setFiles((prev) => {
+      const merged = [
+        ...prev,
+        ...newFiles.filter((f) => !prev.some((p) => p.name === f.name && p.size === f.size)),
+      ];
+      return merged.slice(0, MAX_FILES);
+    });
     setError(null);
-    setResult(null);
+    setResults(null);
+    setFailures([]);
   }, []);
 
   const handleClear = useCallback(() => {
     setFiles([]);
     setError(null);
-    setResult(null);
-    setCopied(false);
+    setResults(null);
+    setFailures([]);
+    setCopied(null);
   }, []);
 
-  const handleRemoveFile = useCallback(() => {
-    setFiles([]);
+  const handleRemoveFile = useCallback((index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
     setError(null);
-    setResult(null);
-    setCopied(false);
+    setResults(null);
+    setFailures([]);
+    setCopied(null);
   }, []);
 
-  const handleCopy = useCallback(async () => {
-    if (!result) return;
+  const copyText = useCallback(async (text: string, key: string) => {
     try {
-      await navigator.clipboard.writeText(result.text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      setTimeout(() => setCopied(null), 2000);
     } catch {
       alert("复制失败，请手动选择文本复制。");
     }
-  }, [result]);
+  }, []);
+
+  const handleCopyAll = useCallback(() => {
+    if (!results) return;
+    copyText(formatResults(results), "all");
+  }, [results, copyText]);
 
   const handleDownloadText = useCallback(() => {
-    if (!result) return;
-    const blob = new Blob([result.text], { type: "text/plain;charset=utf-8" });
+    if (!results) return;
+    const blob = new Blob([formatResults(results)], { type: "text/plain;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "ocr-result.txt";
+    a.download = results.length > 1 ? "ocr-results.txt" : "ocr-result.txt";
     a.click();
     URL.revokeObjectURL(a.href);
-  }, [result]);
+  }, [results]);
 
   // 下载 OCR 为 PDF（将识别文字排版为多页文本 PDF，不再截断/丢行）
   const handleDownloadPDF = useCallback(async () => {
-    if (!result) return;
+    if (!results) return;
     try {
       const PDFLib = await import("pdf-lib");
       const pdf = await PDFLib.PDFDocument.create();
@@ -100,7 +125,7 @@ export default function OCRTextPage() {
       const maxWidth = pageWidth - margin * 2;
 
       // 按换行拆分，超宽行做软换行
-      const paragraphs = result.text.split(/\n+/).filter((l) => l.trim());
+      const paragraphs = formatResults(results).split(/\n+/).filter((l) => l.trim());
       const lines: string[] = [];
       for (const p of paragraphs) {
         let remaining = p.trim();
@@ -138,7 +163,7 @@ export default function OCRTextPage() {
     } catch (err: any) {
       alert("生成 PDF 失败: " + (err?.message || "未知错误"));
     }
-  }, [result]);
+  }, [results]);
 
   const getTesseract = useCallback(async () => {
     if (workerRef.current) return workerRef.current;
@@ -150,9 +175,11 @@ export default function OCRTextPage() {
       langPath: "https://tessdata.projectnaptha.com/4.0.0",
       logger: (m: any) => {
         if (m.status === "recognizing text") {
-          setProgress(`正在识别文字... ${(m.progress * 100).toFixed(0)}%`);
+          setProgress(
+            `${progressCtxRef.current}正在识别文字... ${(m.progress * 100).toFixed(0)}%`
+          );
         } else if (m.status === "loading language traineddata") {
-          setProgress("正在下载识别语言包（首次使用可能需要一点时间）...");
+          setProgress(`${progressCtxRef.current}正在下载识别语言包（首次使用可能需要一点时间）...`);
         }
       },
     });
@@ -168,54 +195,90 @@ export default function OCRTextPage() {
 
     setIsProcessing(true);
     setError(null);
-    setResult(null);
+    setResults(null);
+    setFailures([]);
     const abort = new AbortController();
     abortRef.current = abort;
+    progressCtxRef.current = "";
+
+    const collected: OCRResult[] = [];
+    const failed: string[] = [];
+    const total = files.length;
 
     try {
-      const file = files[0];
-      const ext = file.name.split(".").pop()?.toLowerCase() || "";
-      const isPDF = ext === "pdf";
+      for (let fi = 0; fi < total; fi++) {
+        const file = files[fi];
+        const prefix = total > 1 ? `第 ${fi + 1}/${total} 个文件 · ` : "";
 
-      let images: { blob: Blob; pageNumber: number }[];
-      let pageCount = 1;
+        try {
+          const ext = file.name.split(".").pop()?.toLowerCase() || "";
+          const isPDF = ext === "pdf";
 
-      const worker = await getTesseract();
+          let images: { blob: Blob; pageNumber: number }[];
+          let pageCount = 1;
 
-      if (isPDF) {
-        setProgress("正在渲染 PDF 页面...");
-        const buf = await file.arrayBuffer();
-        const res = await pdfToImages(buf, "png", 2, undefined, abort.signal);
-        images = res.images;
-        pageCount = res.totalPages;
-      } else {
-        // 图片文件直接作为 Blob
-        setProgress("正在读取图片...");
-        images = [{ blob: file, pageNumber: 1 }];
-      }
+          const worker = await getTesseract();
 
-      // 逐页 OCR（tesseract.js 原生支持 Blob 输入）
-      const texts: string[] = [];
-      for (const img of images) {
-        if (abort.signal.aborted) throw new Error("操作已取消");
-        if (images.length > 1) {
-          setProgress(`正在识别第 ${img.pageNumber}/${images.length} 页...`);
+          if (isPDF) {
+            progressCtxRef.current = prefix;
+            setProgress(`${prefix}正在渲染 ${file.name} 的页面...`);
+            const buf = await file.arrayBuffer();
+            const res = await pdfToImages(buf, "png", 2, undefined, abort.signal);
+            images = res.images;
+            pageCount = res.totalPages;
+          } else {
+            // 图片文件直接作为 Blob
+            progressCtxRef.current = prefix;
+            setProgress(`${prefix}正在读取 ${file.name}...`);
+            images = [{ blob: file, pageNumber: 1 }];
+          }
+
+          // 逐页 OCR（tesseract.js 原生支持 Blob 输入）
+          const texts: string[] = [];
+          for (const img of images) {
+            if (abort.signal.aborted) throw new Error("操作已取消");
+            const pageCtx =
+              images.length > 1 ? `第 ${img.pageNumber}/${images.length} 页 · ` : "";
+            progressCtxRef.current = `${prefix}${pageCtx}`;
+            setProgress(
+              `${prefix}正在识别第 ${img.pageNumber}/${images.length} 页...`
+            );
+            const { data } = await worker.recognize(img.blob);
+            texts.push(data.text);
+          }
+
+          const fullText = texts.join("\n\n").trim();
+          if (fullText) {
+            collected.push({ name: file.name, text: fullText, pages: pageCount });
+          } else {
+            failed.push(`${file.name}（未识别到文字）`);
+          }
+        } catch (fileErr: any) {
+          // 用户取消时中断整批；单个文件失败只记录，继续处理后续文件
+          if (abort.signal.aborted) throw fileErr;
+          console.error(`OCR failed for ${file.name}:`, fileErr);
+          failed.push(`${file.name}（${friendlyError(fileErr, "识别失败")}）`);
+          // worker 可能已进入异常状态，释放后由下一个文件重建
+          if (workerRef.current) {
+            try {
+              await workerRef.current.terminate();
+            } catch {
+              // ignore
+            }
+            workerRef.current = null;
+          }
         }
-        const { data } = await worker.recognize(img.blob);
-        texts.push(data.text);
       }
 
-      const fullText = texts.join("\n\n").trim();
-      if (!fullText) {
+      if (collected.length === 0) {
         setError(
-          "未识别到文字。可能是扫描件清晰度不足，建议上传更高分辨率的图片，或选择更合适的语言。"
+          failed.length > 0
+            ? `未能从任何文件中提取文字：${failed.join("；")}`
+            : "未识别到文字。可能是扫描件清晰度不足，建议上传更高分辨率的图片，或选择更合适的语言。"
         );
       } else {
-        setResult({
-          text: fullText,
-          pages: pageCount,
-          source: file.name,
-        });
+        setResults(collected);
+        setFailures(failed);
       }
       setProgress("");
     } catch (err: any) {
@@ -238,28 +301,32 @@ export default function OCRTextPage() {
       }
       setIsProcessing(false);
       setProgress("");
+      progressCtxRef.current = "";
       abortRef.current = null;
     }
   }, [files, getTesseract]);
 
+  const totalPages = results?.reduce((sum, r) => sum + r.pages, 0) ?? 0;
+  const totalChars = results?.reduce((sum, r) => sum + r.text.length, 0) ?? 0;
+
   return (
     <ToolLayout tool={tool}>
-      {!result ? (
+      {!results ? (
         <div className="space-y-6">
           <div className="rounded-xl bg-sky-50 border border-sky-100 p-4 text-sm text-sky-700">
             <p className="font-medium">💡 使用提示</p>
             <p className="mt-1 text-sky-600">
-              上传清晰的扫描件或图片（JPG/PNG），或 PDF 文件。识别引擎在浏览器本地运行，
+              上传清晰的扫描件或图片（JPG/PNG），或 PDF 文件，最多 {MAX_FILES} 个。识别引擎在浏览器本地运行，
               首次使用需下载语言包（CDN），之后自动缓存。
             </p>
           </div>
 
           <FileUpload
             onFilesSelected={handleFilesSelected}
-            multiple={false}
+            multiple
             accept=".pdf,.jpg,.jpeg,.png,.webp"
             acceptDescription="PDF、JPG、PNG"
-            maxFiles={1}
+            maxFiles={MAX_FILES}
             maxSizeMB={50}
             files={files}
             onRemoveFile={handleRemoveFile}
@@ -308,6 +375,8 @@ export default function OCRTextPage() {
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     {progress || "处理中..."}
                   </span>
+                ) : files.length > 1 ? (
+                  `识别 ${files.length} 个文件`
                 ) : (
                   "开始识别文字"
                 )}
@@ -334,45 +403,88 @@ export default function OCRTextPage() {
             <div>
               <h3 className="text-lg font-semibold text-green-800">识别完成！</h3>
               <p className="text-sm text-green-600">
-                已从 {result.source} 中提取 {result.pages} 页文字的文本内容
+                共处理 {results.length} 个文件，提取 {totalPages} 页文字（{totalChars} 字）
               </p>
             </div>
           </div>
 
-          {/* 结果文本 */}
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between bg-gray-50 px-4 py-2.5 border-b">
-              <span className="text-sm font-medium text-gray-700">
-                识别结果（{result.text.length} 字）
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCopy}
-                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-green-500" /> 已复制
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" /> 复制
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleDownloadText}
-                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  <Download className="h-3.5 w-3.5" /> 下载 TXT
-                </button>
-              </div>
+          {/* 失败文件提示 */}
+          {failures.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm font-medium text-amber-800">
+                {failures.length} 个文件未能识别
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {failures.map((f) => (
+                  <li key={f} className="text-sm text-amber-700">
+                    {f}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <textarea
-              readOnly
-              value={result.text}
-              className="w-full h-72 p-4 text-sm text-gray-800 bg-white focus:outline-none resize-y font-mono leading-relaxed"
-            />
+          )}
+
+          {/* 第一屏操作条 */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleCopyAll}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              {copied === "all" ? (
+                <>
+                  <Check className="h-4 w-4 text-green-500" /> 已复制全部
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" /> 复制全部
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleDownloadText}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <Download className="h-4 w-4" /> 下载全部 TXT
+            </button>
+            <button
+              onClick={handleClear}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
+            >
+              处理下一个文件
+            </button>
+          </div>
+
+          {/* 结果文本：按文件分段 */}
+          <div className="space-y-4">
+            {results.map((r, i) => (
+              <div
+                key={`${r.name}-${i}`}
+                className="rounded-xl border bg-white shadow-sm overflow-hidden"
+              >
+                <div className="flex items-center justify-between gap-2 bg-gray-50 px-4 py-2.5 border-b">
+                  <span className="truncate text-sm font-medium text-gray-700">
+                    {r.name}（{r.pages} 页）
+                  </span>
+                  <button
+                    onClick={() => copyText(r.text, `file-${i}`)}
+                    className="flex-shrink-0 inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    {copied === `file-${i}` ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-green-500" /> 已复制
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" /> 复制
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="max-h-72 overflow-y-auto p-4 text-sm text-gray-800 font-mono leading-relaxed whitespace-pre-wrap">
+                  {r.text}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* 底部操作 */}
@@ -383,12 +495,6 @@ export default function OCRTextPage() {
             >
               <FileText className="h-4 w-4" />
               导出为文本 PDF
-            </button>
-            <button
-              onClick={handleClear}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border px-6 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
-            >
-              识别其他文件
             </button>
           </div>
         </div>

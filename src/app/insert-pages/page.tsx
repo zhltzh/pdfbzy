@@ -8,7 +8,7 @@ import { PageSelector } from "@/components/tools/page-selector";
 import { ResultDownload } from "@/components/tools/result-download";
 import { getToolBySlug } from "@/config/tools";
 import { insertPDFPages, getPDFPageCount } from "@/lib/pdf-client";
-import { FileUp, FilePlus2, FileText } from "lucide-react";
+import { FileUp, FilePlus2, FileText, Info } from "lucide-react";
 import { cn, friendlyError } from "@/lib/utils";
 
 const tool = getToolBySlug("insert-pages")!;
@@ -214,6 +214,13 @@ export default function InsertPagesPage() {
     <ToolLayout tool={tool}>
       {!results ? (
         <div className="space-y-6">
+          <div className="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-blue-700">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p>
+              此工具需要指定插入位置，一次处理一组主文档与来源文档。如需批量处理，可先用「合并 PDF」整合后再操作。
+            </p>
+          </div>
+
           {/* 第一步：上传主文档 */}
           <div>
             <div className="mb-2 flex items-center gap-2">

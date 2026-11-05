@@ -73,69 +73,106 @@ export default function ProtectPdfPage() {
     setError(null);
   }, []);
 
-  const handleProtect = useCallback(async () => {
-    if (files.length === 0) {
-      setError("请先选择一个 PDF 文件。");
-      return;
-    }
-    if (!password) {
-      setError("请设置加密密码。");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("两次输入的密码不一致，请重新确认。");
-      return;
-    }
-    if (password.length < 6) {
-      setError("密码长度至少 6 位，建议使用更复杂的密码。");
-      return;
-    }
+  const runProtect = useCallback(
+    async (targetFiles: File[]) => {
+      if (targetFiles.length === 0) {
+        setError("请先选择一个 PDF 文件。");
+        return;
+      }
+      if (!password) {
+        setError("请设置加密密码。");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("两次输入的密码不一致，请重新确认。");
+        return;
+      }
+      if (password.length < 6) {
+        setError("密码长度至少 6 位，建议使用更复杂的密码。");
+        return;
+      }
 
-    setIsProcessing(true);
-    setError(null);
+      setIsProcessing(true);
+      setError(null);
 
-    try {
-      const out: { name: string; blob: Blob; size: number }[] = [];
-      const failed: string[] = [];
+      try {
+        const out: { name: string; blob: Blob; size: number }[] = [];
+        const failed: string[] = [];
 
-      for (let fi = 0; fi < files.length; fi++) {
-        const file = files[fi];
-        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
-        try {
-          const header = await file.slice(0, 5).text();
-          if (!header.includes("%PDF")) throw new Error("不是有效 PDF");
+        for (let fi = 0; fi < targetFiles.length; fi++) {
+          const file = targetFiles[fi];
+          const prefix = targetFiles.length > 1 ? `[${fi + 1}/${targetFiles.length}] ` : "";
+          try {
+            const header = await file.slice(0, 5).text();
+            if (!header.includes("%PDF")) throw new Error("不是有效 PDF");
 
-          setProgress(`${prefix}正在加密 ${file.name}...`);
-          const buffer = await file.arrayBuffer();
-          const resultBytes = await protectPDF(buffer, password);
+            setProgress(`${prefix}正在加密 ${file.name}...`);
+            const buffer = await file.arrayBuffer();
+            const resultBytes = await protectPDF(buffer, password);
 
-          const blob = new Blob([resultBytes], { type: "application/pdf" });
-          if (blob.size === 0) throw new Error("加密后为空");
+            const blob = new Blob([resultBytes], { type: "application/pdf" });
+            if (blob.size === 0) throw new Error("加密后为空");
 
-          out.push({
-            name: `${file.name.replace(/\.pdf$/i, "")}-加密.pdf`,
-            blob,
-            size: blob.size,
-          });
-        } catch (inner: any) {
-          failed.push(file.name);
+            out.push({
+              name: `${file.name.replace(/\.pdf$/i, "")}-加密.pdf`,
+              blob,
+              size: blob.size,
+            });
+          } catch (inner: any) {
+            failed.push(file.name);
+          }
         }
+
+        if (out.length === 0) throw new Error("所有文件都加密失败。");
+        setResults(out);
+        if (failed.length > 0) {
+          setError(`${failed.length} 个文件加密失败：${failed.join("、")}。其余已成功。`);
+        }
+        setProgress("");
+      } catch (err: any) {
+        console.error("Protect PDF failed:", err);
+        setError(friendlyError(err, "加密失败，请确保文件是有效的 PDF 格式。"));
+      } finally {
+        setIsProcessing(false);
+        setProgress("");
+      }
+    },
+    [password, confirmPassword]
+  );
+
+  const handleProtect = useCallback(() => runProtect(files), [runProtect, files]);
+
+  /**
+   * 从结果页拖入新文件：沿用当前密码直接加密。
+   * 密码不完整或文件已加密时，退回只填文件（需用户确认参数后再点按钮）。
+   */
+  const handleDropAndRun = useCallback(
+    async (dropped: File[]) => {
+      const next = dropped.slice(0, MAX_FILES);
+      if (next.length === 0) return;
+      setFiles(next);
+      setResults(null);
+      setError(null);
+
+      const passwordReady =
+        !!password && password === confirmPassword && password.length >= 6;
+      if (!passwordReady) return;
+
+      try {
+        const buffer = await next[0].arrayBuffer();
+        const info = await checkPDFEncryption(buffer);
+        if (info.isEncrypted) {
+          setError("该文件已有密码保护。如需重新加密，请先使用「解密 PDF」工具解锁后再操作。");
+          return;
+        }
+      } catch {
+        // 忽略解析失败，由加密流程兜底报错
       }
 
-      if (out.length === 0) throw new Error("所有文件都加密失败。");
-      setResults(out);
-      if (failed.length > 0) {
-        setError(`${failed.length} 个文件加密失败：${failed.join("、")}。其余已成功。`);
-      }
-      setProgress("");
-    } catch (err: any) {
-      console.error("Protect PDF failed:", err);
-      setError(friendlyError(err, "加密失败，请确保文件是有效的 PDF 格式。"));
-    } finally {
-      setIsProcessing(false);
-      setProgress("");
-    }
-  }, [files, password, confirmPassword]);
+      void runProtect(next);
+    },
+    [password, confirmPassword, runProtect]
+  );
 
   return (
     <ToolLayout tool={tool}>
@@ -215,7 +252,13 @@ export default function ProtectPdfPage() {
           )}
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
+        <ResultDownload
+          results={results}
+          onReset={handleClear}
+          onDropAndRun={handleDropAndRun}
+          accept=".pdf"
+          dropHint="将使用当前密码"
+        />
       )}
     </ToolLayout>
   );

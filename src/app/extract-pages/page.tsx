@@ -8,7 +8,7 @@ import { PageSelector } from "@/components/tools/page-selector";
 import { ResultDownload } from "@/components/tools/result-download";
 import { getToolBySlug } from "@/config/tools";
 import { extractPDFPages, getPDFPageCount } from "@/lib/pdf-client";
-import { FileOutput } from "lucide-react";
+import { FileOutput, Info } from "lucide-react";
 
 const tool = getToolBySlug("extract-pages")!;
 
@@ -121,6 +121,13 @@ export default function ExtractPagesPage() {
     <ToolLayout tool={tool}>
       {!results ? (
         <div className="space-y-6">
+          <div className="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-blue-700">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p>
+              此工具需要按页精确选择，一次处理一个文件。如需批量处理，可先用「合并 PDF」整合后再操作。
+            </p>
+          </div>
+
           <FileUpload
             onFilesSelected={handleFilesSelected}
             multiple={false}

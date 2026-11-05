@@ -86,8 +86,8 @@ export default function CompressPDFPage() {
     prevCount.current = files.length;
   }, [files.length]);
 
-  const handleCompress = useCallback(async () => {
-    if (files.length === 0) {
+  const runCompress = useCallback(async (targetFiles: File[]) => {
+    if (targetFiles.length === 0) {
       setError("请先选择要压缩的 PDF 文件。");
       return;
     }
@@ -102,9 +102,9 @@ export default function CompressPDFPage() {
       const out: { name: string; blob: Blob; size: number }[] = [];
       const failed: string[] = [];
 
-      for (let fi = 0; fi < files.length; fi++) {
-        const file = files[fi];
-        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+      for (let fi = 0; fi < targetFiles.length; fi++) {
+        const file = targetFiles[fi];
+        const prefix = targetFiles.length > 1 ? `[${fi + 1}/${targetFiles.length}] ` : "";
         setProgress(`${prefix}正在压缩 ${file.name}...`);
 
         try {
@@ -144,7 +144,22 @@ export default function CompressPDFPage() {
       setProgress("");
       abortRef.current = null;
     }
-  }, [files, preset]);
+  }, [preset]);
+
+  const handleCompress = useCallback(() => runCompress(files), [runCompress, files]);
+
+  /** 从结果页拖入新文件：沿用当前压缩档位直接开始处理 */
+  const handleDropAndRun = useCallback(
+    (dropped: File[]) => {
+      const next = dropped.slice(0, MAX_FILES);
+      if (next.length === 0) return;
+      setFiles(next);
+      setResults(null);
+      setError(null);
+      void runCompress(next);
+    },
+    [runCompress]
+  );
 
   return (
     <ToolLayout tool={tool}>
@@ -230,7 +245,13 @@ export default function CompressPDFPage() {
           </div>
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
+        <ResultDownload
+          results={results}
+          onReset={handleClear}
+          onDropAndRun={handleDropAndRun}
+          accept=".pdf"
+          dropHint="沿用当前压缩档位"
+        />
       )}
     </ToolLayout>
   );

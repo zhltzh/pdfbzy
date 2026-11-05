@@ -18,8 +18,12 @@ interface ResultDownloadProps {
   enableBatchDownload?: boolean;
   /** 拖入新文件时直接开始下一轮处理 */
   onDropFiles?: (files: File[]) => void;
+  /** 拖入文件后直接开始处理（优先于 onDropFiles） */
+  onDropAndRun?: (files: File[]) => void;
   /** 拖拽区接受的扩展名 */
   accept?: string;
+  /** 拖拽区补充提示，如「将使用当前密码」 */
+  dropHint?: string;
 }
 
 export function ResultDownload({
@@ -27,7 +31,9 @@ export function ResultDownload({
   onReset,
   enableBatchDownload = true,
   onDropFiles,
+  onDropAndRun,
   accept = ".pdf",
+  dropHint,
 }: ResultDownloadProps) {
   const [downloaded, setDownloaded] = useState<Set<number>>(new Set());
   const [isBatchDownloading, setIsBatchDownloading] = useState(false);
@@ -94,13 +100,16 @@ export function ResultDownload({
 
   const allDownloaded = downloaded.size === results.length;
 
+  // 有 onDropAndRun 时拖入即处理，否则只回填文件列表
+  const dropHandler = onDropAndRun ?? onDropFiles;
+
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (onDropFiles) setIsDragOver(true);
+      if (dropHandler) setIsDragOver(true);
     },
-    [onDropFiles]
+    [dropHandler]
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -114,11 +123,11 @@ export function ResultDownload({
       e.preventDefault();
       e.stopPropagation();
       setIsDragOver(false);
-      if (!onDropFiles) return;
+      if (!dropHandler) return;
       const dropped = Array.from(e.dataTransfer.files);
-      if (dropped.length > 0) onDropFiles(dropped);
+      if (dropped.length > 0) dropHandler(dropped);
     },
-    [onDropFiles]
+    [dropHandler]
   );
 
   return (
@@ -207,7 +216,7 @@ export function ResultDownload({
 
       {/* 继续处理：拖拽即开始下一轮 */}
       <div className="mt-5 space-y-3">
-        {onDropFiles && (
+        {dropHandler && (
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -223,9 +232,14 @@ export function ResultDownload({
             <UploadCloud className={cn("h-6 w-6 flex-shrink-0", isDragOver ? "text-primary" : "text-gray-400")} />
             <div className="text-left">
               <p className="text-sm font-medium text-gray-700">
-                {isDragOver ? "松开即可开始处理新文件" : "直接拖入新的文件，继续处理"}
+                {isDragOver
+                  ? "松开即可开始处理新文件"
+                  : onDropAndRun
+                  ? "拖入新的文件，立即开始处理"
+                  : "直接拖入新的文件，继续处理"}
               </p>
               <p className="mt-0.5 text-xs text-gray-400">
+                {dropHint ? `${dropHint} · ` : ""}
                 也可以点击这里回到上传区 · 支持 {accept.split(",").map((a) => a.trim().replace(".", "").toUpperCase()).join("、")}
               </p>
             </div>

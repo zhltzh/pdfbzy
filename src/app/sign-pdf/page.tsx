@@ -123,6 +123,9 @@ export default function SignPDFPage() {
               支持两种签名方式：<strong>手绘签名</strong>（鼠标/手指书写）或
               <strong>上传签名图片</strong>。签名尺寸和位置均可自定义，默认放置在最后一页。
             </p>
+            <p className="mt-1 text-indigo-600">
+              此工具需要定位签名位置，一次处理一个文件。如需批量处理，可先用「合并 PDF」整合后再操作。
+            </p>
           </div>
 
           <FileUpload

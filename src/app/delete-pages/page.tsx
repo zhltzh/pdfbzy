@@ -174,6 +174,9 @@ export default function DeletePagesPage() {
                 <p className="mt-1 text-amber-600">
                   删除的页面将永久从 PDF 中移除。建议在操作前备份原始文件。
                 </p>
+                <p className="mt-1 text-amber-600">
+                  此工具需要按页精确选择，一次处理一个文件。如需批量处理，可先用「合并 PDF」整合后再操作。
+                </p>
               </div>
             </div>
           </div>

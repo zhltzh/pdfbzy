@@ -139,6 +139,9 @@ export default function SplitPDFPage() {
               上传一个 PDF 文件，工具会自动将其每一页拆分为独立的 PDF 文件。
               如果文件页数较多，处理时间可能会稍长，请耐心等待。
             </p>
+            <p className="mt-1 text-blue-600">
+              此工具需要设定拆分规则，一次处理一个文件。如需批量处理，可先用「合并 PDF」整合后再操作。
+            </p>
           </div>
 
           <FileUpload

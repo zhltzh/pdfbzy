@@ -55,8 +55,12 @@ export default function WatermarkPDFPage() {
     abortRef.current?.abort();
   }, []);
 
-  const handleProcess = useCallback(async () => {
-    if (files.length === 0) {
+  const removeFile = useCallback((index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const runWatermark = useCallback(async (targetFiles: File[]) => {
+    if (targetFiles.length === 0) {
       setError("请先上传需要添加水印的 PDF 文件。");
       return;
     }
@@ -75,9 +79,9 @@ export default function WatermarkPDFPage() {
       const out: { name: string; blob: Blob; size: number }[] = [];
       const failed: string[] = [];
 
-      for (let fi = 0; fi < files.length; fi++) {
-        const file = files[fi];
-        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+      for (let fi = 0; fi < targetFiles.length; fi++) {
+        const file = targetFiles[fi];
+        const prefix = targetFiles.length > 1 ? `[${fi + 1}/${targetFiles.length}] ` : "";
         try {
           setProgress(`${prefix}正在为 ${file.name} 添加水印...`);
           const buf = await file.arrayBuffer();
@@ -121,7 +125,24 @@ export default function WatermarkPDFPage() {
       setProgress("");
       abortRef.current = null;
     }
-  }, [files, text, opacity, angle, fontSize, layout]);
+  }, [text, opacity, angle, fontSize, layout]);
+
+  const handleProcess = useCallback(() => runWatermark(files), [runWatermark, files]);
+
+  /** 从结果页拖入新文件：沿用当前水印设置直接开始处理 */
+  const handleDropAndRun = useCallback(
+    (dropped: File[]) => {
+      const next = dropped.slice(0, 10);
+      if (next.length === 0) return;
+      setFiles(next);
+      setResults(null);
+      setError(null);
+      // 水印文字为空时不自动处理，退回让用户补参数
+      if (!text.trim()) return;
+      void runWatermark(next);
+    },
+    [runWatermark, text]
+  );
 
   return (
     <ToolLayout tool={tool}>
@@ -142,7 +163,7 @@ export default function WatermarkPDFPage() {
             maxFiles={10}
             maxSizeMB={200}
             files={files}
-            onRemoveFile={handleClear}
+            onRemoveFile={removeFile}
             onClear={handleClear}
           />
 
@@ -288,7 +309,13 @@ export default function WatermarkPDFPage() {
           )}
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
+        <ResultDownload
+          results={results}
+          onReset={handleClear}
+          onDropAndRun={handleDropAndRun}
+          accept=".pdf"
+          dropHint="沿用当前水印设置"
+        />
       )}
     </ToolLayout>
   );

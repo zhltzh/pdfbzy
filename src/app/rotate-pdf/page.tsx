@@ -79,8 +79,8 @@ export default function RotatePDFPage() {
     setError(null);
   }, []);
 
-  const handleRotate = useCallback(async () => {
-    if (files.length === 0) {
+  const runRotate = useCallback(async (targetFiles: File[]) => {
+    if (targetFiles.length === 0) {
       setError("请先选择一个 PDF 文件。");
       return;
     }
@@ -99,9 +99,9 @@ export default function RotatePDFPage() {
       const out: { name: string; blob: Blob; size: number }[] = [];
       const failed: string[] = [];
 
-      for (let fi = 0; fi < files.length; fi++) {
-        const file = files[fi];
-        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+      for (let fi = 0; fi < targetFiles.length; fi++) {
+        const file = targetFiles[fi];
+        const prefix = targetFiles.length > 1 ? `[${fi + 1}/${targetFiles.length}] ` : "";
         try {
           const header = await file.slice(0, 5).text();
           if (!header.includes("%PDF")) throw new Error("不是有效 PDF");
@@ -136,7 +136,22 @@ export default function RotatePDFPage() {
       setIsProcessing(false);
       setProgress("");
     }
-  }, [files, rotation]);
+  }, [rotation]);
+
+  const handleRotate = useCallback(() => runRotate(files), [runRotate, files]);
+
+  /** 从结果页拖入新文件：沿用当前旋转角度直接开始处理 */
+  const handleDropAndRun = useCallback(
+    (dropped: File[]) => {
+      const next = dropped.slice(0, MAX_FILES);
+      if (next.length === 0) return;
+      setFiles(next);
+      setResults(null);
+      setError(null);
+      void runRotate(next);
+    },
+    [runRotate]
+  );
 
   return (
     <ToolLayout tool={tool} faqItems={faqItems} relatedTools={relatedTools}>
@@ -222,7 +237,13 @@ export default function RotatePDFPage() {
           )}
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
+        <ResultDownload
+          results={results}
+          onReset={handleClear}
+          onDropAndRun={handleDropAndRun}
+          accept=".pdf"
+          dropHint="沿用当前旋转角度"
+        />
       )}
     </ToolLayout>
   );

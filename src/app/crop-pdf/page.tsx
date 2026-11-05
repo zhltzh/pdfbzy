@@ -6,7 +6,7 @@ import { FileUpload } from "@/components/tools/file-upload";
 import { ResultDownload } from "@/components/tools/result-download";
 import { getToolBySlug } from "@/config/tools";
 import { cropPDF, getPDFPageCount } from "@/lib/pdf-client";
-import { Crop, Scissors } from "lucide-react";
+import { Crop, Scissors, Info } from "lucide-react";
 import { cn, friendlyError } from "@/lib/utils";
 
 const tool = getToolBySlug("crop-pdf")!;
@@ -162,6 +162,13 @@ export default function CropPdfPage() {
     <ToolLayout tool={tool}>
       {!results ? (
         <div className="space-y-6">
+          <div className="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-blue-700">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p>
+              此工具需要逐份框选裁剪区域，一次处理一个文件。如需批量处理，可先用「合并 PDF」整合后再操作。
+            </p>
+          </div>
+
           <FileUpload
             onFilesSelected={handleFilesSelected}
             multiple={false}

@@ -62,16 +62,7 @@ export default function UnlockPdfPage() {
     setError(null);
   }, []);
 
-  const handleUnlock = useCallback(async () => {
-    if (files.length === 0) {
-      setError("请先选择一个 PDF 文件。");
-      return;
-    }
-    if (encryptionStatus.isEncrypted && !password) {
-      setError("该文件有密码保护，请输入打开密码。");
-      return;
-    }
-
+  const runUnlock = useCallback(async (targetFiles: File[], pwd: string) => {
     setIsProcessing(true);
     setError(null);
 
@@ -79,16 +70,16 @@ export default function UnlockPdfPage() {
       const out: { name: string; blob: Blob; size: number }[] = [];
       const failed: string[] = [];
 
-      for (let fi = 0; fi < files.length; fi++) {
-        const file = files[fi];
-        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+      for (let fi = 0; fi < targetFiles.length; fi++) {
+        const file = targetFiles[fi];
+        const prefix = targetFiles.length > 1 ? `[${fi + 1}/${targetFiles.length}] ` : "";
         try {
           const header = await file.slice(0, 5).text();
           if (!header.includes("%PDF")) throw new Error("不是有效 PDF");
 
           setProgress(`${prefix}正在解密 ${file.name}...`);
           const buffer = await file.arrayBuffer();
-          const resultBytes = await unprotectPDF(buffer, password);
+          const resultBytes = await unprotectPDF(buffer, pwd);
 
           const blob = new Blob([resultBytes], { type: "application/pdf" });
           if (blob.size === 0) throw new Error("解密后为空");
@@ -129,7 +120,50 @@ export default function UnlockPdfPage() {
       setIsProcessing(false);
       setProgress("");
     }
-  }, [files, password, encryptionStatus.isEncrypted]);
+  }, []);
+
+  const handleUnlock = useCallback(async () => {
+    if (files.length === 0) {
+      setError("请先选择一个 PDF 文件。");
+      return;
+    }
+    if (encryptionStatus.isEncrypted && !password) {
+      setError("该文件有密码保护，请输入打开密码。");
+      return;
+    }
+    await runUnlock(files, password);
+  }, [files, password, encryptionStatus.isEncrypted, runUnlock]);
+
+  /**
+   * 从结果页拖入新文件：未加密时直接开始处理。
+   * 若检测到加密，退回只填文件，由用户输入密码后再点按钮。
+   */
+  const handleDropAndRun = useCallback(
+    async (dropped: File[]) => {
+      const next = dropped.slice(0, 10);
+      if (next.length === 0) return;
+      setFiles(next);
+      setResults(null);
+      setError(null);
+      setPassword("");
+
+      let isEncrypted = false;
+      try {
+        const buffer = await next[0].arrayBuffer();
+        const info = await checkPDFEncryption(buffer);
+        isEncrypted = info.isEncrypted;
+        setEncryptionStatus({ checked: true, isEncrypted });
+      } catch {
+        // 无法解析（损坏/非 PDF）时不要误判为"加密"，置为检测失败
+        setEncryptionStatus({ checked: true, isEncrypted: false, checkFailed: true });
+        return;
+      }
+
+      if (isEncrypted) return;
+      await runUnlock(next, "");
+    },
+    [runUnlock]
+  );
 
   return (
     <ToolLayout tool={tool}>
@@ -225,7 +259,13 @@ export default function UnlockPdfPage() {
           )}
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
+        <ResultDownload
+          results={results}
+          onReset={handleClear}
+          onDropAndRun={handleDropAndRun}
+          accept=".pdf"
+          dropHint="未加密的文件会立即开始解锁"
+        />
       )}
     </ToolLayout>
   );
