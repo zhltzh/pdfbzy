@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { friendlyError } from "@/lib/utils";
 import { ToolLayout } from "@/components/tools/tool-layout";
 import { FileUpload } from "@/components/tools/file-upload";
@@ -10,6 +10,8 @@ import { compressPDF } from "@/lib/pdf-client";
 import { XCircle } from "lucide-react";
 
 const tool = getToolBySlug("compress-pdf")!;
+
+const MAX_FILES = 10;
 
 const PRESETS = [
   {
@@ -46,11 +48,22 @@ export default function CompressPDFPage() {
   const [error, setError] = useState<string | null>(null);
   const [preset, setPreset] = useState<string>("ebook");
   const abortRef = useRef<AbortController | null>(null);
+  const actionRef = useRef<HTMLDivElement>(null);
+  const prevCount = useRef(0);
 
   const handleFilesSelected = useCallback((newFiles: File[]) => {
-    setFiles(newFiles.slice(0, 1));
+    setFiles((prev) => {
+      const merged = [...prev, ...newFiles.filter(
+        (f) => !prev.some((p) => p.name === f.name && p.size === f.size)
+      )];
+      return merged.slice(0, MAX_FILES);
+    });
     setError(null);
     setResults(null);
+  }, []);
+
+  const removeFile = useCallback((index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const handleClear = useCallback(() => {
@@ -66,6 +79,13 @@ export default function CompressPDFPage() {
     abortRef.current?.abort();
   }, []);
 
+  useEffect(() => {
+    if (files.length > prevCount.current && files.length > 0) {
+      actionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    prevCount.current = files.length;
+  }, [files.length]);
+
   const handleCompress = useCallback(async () => {
     if (files.length === 0) {
       setError("请先选择要压缩的 PDF 文件。");
@@ -78,18 +98,38 @@ export default function CompressPDFPage() {
 
     try {
       setProgress("正在加载压缩引擎（首次使用需下载约 15MB 引擎，请稍候）...");
-      const buf = await files[0].arrayBuffer();
-      setProgress("正在压缩 PDF...");
-      const outBuf = await compressPDF(buf, preset as any, abortRef.current.signal);
 
-      const blob = new Blob([outBuf], { type: "application/pdf" });
-      if (blob.size === 0) {
-        throw new Error("压缩产生了空文件，请更换压缩档位重试。");
+      const out: { name: string; blob: Blob; size: number }[] = [];
+      const failed: string[] = [];
+
+      for (let fi = 0; fi < files.length; fi++) {
+        const file = files[fi];
+        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+        setProgress(`${prefix}正在压缩 ${file.name}...`);
+
+        try {
+          const buf = await file.arrayBuffer();
+          const outBuf = await compressPDF(buf, preset as any, abortRef.current.signal);
+          const blob = new Blob([outBuf], { type: "application/pdf" });
+          if (blob.size === 0) throw new Error("空文件");
+          out.push({
+            name: file.name.replace(/\.pdf$/i, "-compressed.pdf"),
+            blob,
+            size: blob.size,
+          });
+        } catch (inner: any) {
+          if ((inner?.message || "").includes("取消")) throw inner;
+          failed.push(file.name);
+        }
       }
 
-      const originalSize = files[0].size;
-      const resultName = files[0].name.replace(/\.pdf$/i, "-compressed.pdf");
-      setResults([{ name: resultName, blob, size: blob.size }]);
+      if (out.length === 0) {
+        throw new Error("所有文件都压缩失败，请更换压缩档位重试。");
+      }
+      setResults(out);
+      if (failed.length > 0) {
+        setError(`${failed.length} 个文件压缩失败：${failed.join("、")}。其余已成功。`);
+      }
       setProgress("");
     } catch (err: any) {
       console.error("Compress failed:", err);
@@ -109,53 +149,18 @@ export default function CompressPDFPage() {
   return (
     <ToolLayout tool={tool}>
       {!results ? (
-        <div className="space-y-6">
-          <div className="rounded-xl bg-teal-50 border border-teal-100 p-4 text-sm text-teal-700">
-            <p className="font-medium">💡 使用提示</p>
-            <p className="mt-1 text-teal-600">
-              基于 Ghostscript 专业压缩引擎，在浏览器本地完成压缩，文件不会上传到服务器。
-              首次使用需加载压缩引擎（约 15MB），之后浏览器会缓存。
-            </p>
-          </div>
-
+        <div className="space-y-4">
           <FileUpload
             onFilesSelected={handleFilesSelected}
-            multiple={false}
+            multiple
             accept=".pdf"
             acceptDescription="PDF"
-            maxFiles={1}
+            maxFiles={MAX_FILES}
             maxSizeMB={200}
             files={files}
-            onRemoveFile={handleClear}
+            onRemoveFile={removeFile}
             onClear={handleClear}
           />
-
-          {files.length > 0 && (
-            <div className="rounded-2xl border bg-white p-5 animate-slide-up">
-              <p className="mb-3 text-sm font-medium text-gray-700">压缩强度</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setPreset(p.id)}
-                    className={`text-left rounded-xl border-2 p-4 transition-all ${
-                      preset === p.id
-                        ? "border-teal-500 bg-teal-50"
-                        : "border-gray-200 hover:border-teal-300"
-                    }`}
-                  >
-                    <p className={`font-medium ${preset === p.id ? "text-teal-700" : "text-gray-700"}`}>
-                      {p.label}
-                    </p>
-                    <p className="mt-0.5 text-xs text-gray-400">{p.desc}</p>
-                    <p className={`mt-1 text-xs font-medium ${preset === p.id ? "text-teal-600" : "text-teal-500/70"}`}>
-                      {p.detail}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
@@ -164,7 +169,32 @@ export default function CompressPDFPage() {
           )}
 
           {files.length > 0 && (
-            <div className="space-y-3">
+            <div ref={actionRef} className="space-y-3 rounded-2xl border bg-white p-5 animate-slide-up">
+              <div>
+                <p className="mb-3 text-sm font-medium text-gray-700">压缩强度</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {PRESETS.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setPreset(p.id)}
+                      className={`text-left rounded-xl border-2 p-4 transition-all ${
+                        preset === p.id
+                          ? "border-teal-500 bg-teal-50"
+                          : "border-gray-200 hover:border-teal-300"
+                      }`}
+                    >
+                      <p className={`font-medium ${preset === p.id ? "text-teal-700" : "text-gray-700"}`}>
+                        {p.label}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-400">{p.desc}</p>
+                      <p className={`mt-1 text-xs font-medium ${preset === p.id ? "text-teal-600" : "text-teal-500/70"}`}>
+                        {p.detail}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <button
                 onClick={handleCompress}
                 disabled={isProcessing}
@@ -176,9 +206,10 @@ export default function CompressPDFPage() {
                     {progress || "处理中..."}
                   </span>
                 ) : (
-                  "压缩 PDF"
+                  files.length > 1 ? `压缩 ${files.length} 个 PDF` : "压缩 PDF"
                 )}
               </button>
+
               {isProcessing && (
                 <button
                   onClick={handleCancel}
@@ -190,9 +221,16 @@ export default function CompressPDFPage() {
               )}
             </div>
           )}
+
+          <div className="rounded-xl bg-teal-50 border border-teal-100 p-4 text-sm text-teal-700">
+            <p className="font-medium">💡 使用提示</p>
+            <p className="mt-1 text-teal-600">
+              可一次添加最多 {MAX_FILES} 个 PDF，统一使用同一压缩档位。基于 Ghostscript 专业压缩引擎，在浏览器本地完成，文件不会上传到服务器。首次使用需加载压缩引擎（约 15MB），之后浏览器会缓存。
+            </p>
+          </div>
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} />
+        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
       )}
     </ToolLayout>
   );

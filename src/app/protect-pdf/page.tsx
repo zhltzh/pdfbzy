@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { friendlyError } from "@/lib/utils";
 import { ToolLayout } from "@/components/tools/tool-layout";
 import { FileUpload } from "@/components/tools/file-upload";
@@ -12,6 +12,8 @@ import { Lock } from "lucide-react";
 
 const tool = getToolBySlug("protect-pdf")!;
 
+const MAX_FILES = 10;
+
 export default function ProtectPdfPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [password, setPassword] = useState("");
@@ -22,10 +24,24 @@ export default function ProtectPdfPage() {
   >(null);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const actionRef = useRef<HTMLDivElement>(null);
+  const prevCount = useRef(0);
+
+  useEffect(() => {
+    if (files.length > prevCount.current && files.length > 0) {
+      actionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    prevCount.current = files.length;
+  }, [files.length]);
 
   const handleFilesSelected = useCallback(
     async (newFiles: File[]) => {
-      setFiles((prev) => [...prev, ...newFiles]);
+      setFiles((prev) => {
+        const merged = [...prev, ...newFiles.filter(
+          (f) => !prev.some((p) => p.name === f.name && p.size === f.size)
+        )];
+        return merged.slice(0, MAX_FILES);
+      });
       setError(null);
       setResults(null);
       // 检测文件是否已加密
@@ -79,29 +95,38 @@ export default function ProtectPdfPage() {
     setError(null);
 
     try {
-      const file = files[0];
-      const header = await file.slice(0, 5).text();
-      if (!header.includes("%PDF")) {
-        throw new Error(`"${file.name}" 不是有效的 PDF 文件。`);
+      const out: { name: string; blob: Blob; size: number }[] = [];
+      const failed: string[] = [];
+
+      for (let fi = 0; fi < files.length; fi++) {
+        const file = files[fi];
+        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+        try {
+          const header = await file.slice(0, 5).text();
+          if (!header.includes("%PDF")) throw new Error("不是有效 PDF");
+
+          setProgress(`${prefix}正在加密 ${file.name}...`);
+          const buffer = await file.arrayBuffer();
+          const resultBytes = await protectPDF(buffer, password);
+
+          const blob = new Blob([resultBytes], { type: "application/pdf" });
+          if (blob.size === 0) throw new Error("加密后为空");
+
+          out.push({
+            name: `${file.name.replace(/\.pdf$/i, "")}-加密.pdf`,
+            blob,
+            size: blob.size,
+          });
+        } catch (inner: any) {
+          failed.push(file.name);
+        }
       }
 
-      setProgress("正在加密...");
-      const buffer = await file.arrayBuffer();
-      const resultBytes = await protectPDF(buffer, password);
-
-      const blob = new Blob([resultBytes], { type: "application/pdf" });
-      if (blob.size === 0) {
-        throw new Error("加密后的文件为空，请重试。");
+      if (out.length === 0) throw new Error("所有文件都加密失败。");
+      setResults(out);
+      if (failed.length > 0) {
+        setError(`${failed.length} 个文件加密失败：${failed.join("、")}。其余已成功。`);
       }
-
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      setResults([
-        {
-          name: `${baseName}-加密.pdf`,
-          blob,
-          size: blob.size,
-        },
-      ]);
       setProgress("");
     } catch (err: any) {
       console.error("Protect PDF failed:", err);
@@ -118,10 +143,10 @@ export default function ProtectPdfPage() {
         <div className="space-y-6">
           <FileUpload
             onFilesSelected={handleFilesSelected}
-            multiple={false}
+            multiple
             accept=".pdf"
             acceptDescription="PDF"
-            maxFiles={1}
+            maxFiles={MAX_FILES}
             maxSizeMB={50}
             files={files}
             onRemoveFile={handleRemoveFile}
@@ -135,7 +160,7 @@ export default function ProtectPdfPage() {
           )}
 
           {files.length > 0 && (
-            <div className="animate-slide-up space-y-4">
+            <div ref={actionRef} className="animate-slide-up space-y-4">
               <div className="rounded-2xl border bg-white p-5 space-y-4">
                 <PasswordInput
                   value={password}
@@ -182,7 +207,7 @@ export default function ProtectPdfPage() {
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <Lock className="h-4 w-4" />
-                    加密 PDF
+                    {files.length > 1 ? `加密 ${files.length} 个 PDF` : "加密 PDF"}
                   </span>
                 )}
               </button>
@@ -190,7 +215,7 @@ export default function ProtectPdfPage() {
           )}
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} />
+        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
       )}
     </ToolLayout>
   );

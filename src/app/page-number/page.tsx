@@ -39,7 +39,12 @@ export default function PageNumberPage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const handleFilesSelected = useCallback((newFiles: File[]) => {
-    setFiles(newFiles.slice(0, 1));
+    setFiles((prev) => {
+      const merged = [...prev, ...newFiles.filter(
+        (f) => !prev.some((p) => p.name === f.name && p.size === f.size)
+      )];
+      return merged.slice(0, 10);
+    });
     setError(null);
     setResults(null);
   }, []);
@@ -69,29 +74,42 @@ export default function PageNumberPage() {
 
     try {
       setProgress("正在为每一页添加页码...");
-      const buf = await files[0].arrayBuffer();
-      const outBuf = await addPageNumbers(
-        buf,
-        {
-          position: position as any,
-          format: format as any,
-          startNumber,
-          fontSize,
-        },
-        (cur, total) => {
-          if (total > 1) setProgress(`正在为第 ${cur}/${total} 页添加页码...`);
-        },
-        abortRef.current.signal
-      );
-      const blob = new Blob([outBuf], { type: "application/pdf" });
-      if (blob.size === 0) throw new Error("生成的文件为空，请重试。");
-      setResults([
-        {
-          name: files[0].name.replace(/\.pdf$/i, "-numbered.pdf"),
-          blob,
-          size: blob.size,
-        },
-      ]);
+
+      const out: { name: string; blob: Blob; size: number }[] = [];
+      const failed: string[] = [];
+
+      for (let fi = 0; fi < files.length; fi++) {
+        const file = files[fi];
+        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+        try {
+          setProgress(`${prefix}正在为 ${file.name} 添加页码...`);
+          const buf = await file.arrayBuffer();
+          const outBuf = await addPageNumbers(
+            buf,
+            { position: position as any, format: format as any, startNumber, fontSize },
+            (cur, total) => {
+              if (total > 1) setProgress(`${prefix}第 ${cur}/${total} 页...`);
+            },
+            abortRef.current.signal
+          );
+          const blob = new Blob([outBuf], { type: "application/pdf" });
+          if (blob.size === 0) throw new Error("生成的文件为空");
+          out.push({
+            name: file.name.replace(/\.pdf$/i, "-numbered.pdf"),
+            blob,
+            size: blob.size,
+          });
+        } catch (inner: any) {
+          if ((inner?.message || "").includes("取消")) throw inner;
+          failed.push(file.name);
+        }
+      }
+
+      if (out.length === 0) throw new Error("所有文件都处理失败。");
+      setResults(out);
+      if (failed.length > 0) {
+        setError(`${failed.length} 个文件处理失败：${failed.join("、")}。其余已成功。`);
+      }
       setProgress("");
     } catch (err: any) {
       console.error("Page number failed:", err);
@@ -121,10 +139,10 @@ export default function PageNumberPage() {
 
           <FileUpload
             onFilesSelected={handleFilesSelected}
-            multiple={false}
+            multiple
             accept=".pdf"
             acceptDescription="PDF"
-            maxFiles={1}
+            maxFiles={10}
             maxSizeMB={200}
             files={files}
             onRemoveFile={handleClear}
@@ -243,7 +261,7 @@ export default function PageNumberPage() {
           )}
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} />
+        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
       )}
     </ToolLayout>
   );

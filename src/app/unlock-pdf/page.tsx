@@ -27,7 +27,12 @@ export default function UnlockPdfPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleFilesSelected = useCallback(async (newFiles: File[]) => {
-    setFiles((prev) => [...prev, ...newFiles]);
+    setFiles((prev) => {
+      const merged = [...prev, ...newFiles.filter(
+        (f) => !prev.some((p) => p.name === f.name && p.size === f.size)
+      )];
+      return merged.slice(0, 10);
+    });
     setError(null);
     setResults(null);
     setPassword("");
@@ -71,29 +76,40 @@ export default function UnlockPdfPage() {
     setError(null);
 
     try {
-      const file = files[0];
-      const header = await file.slice(0, 5).text();
-      if (!header.includes("%PDF")) {
-        throw new Error(`"${file.name}" 不是有效的 PDF 文件。`);
+      const out: { name: string; blob: Blob; size: number }[] = [];
+      const failed: string[] = [];
+
+      for (let fi = 0; fi < files.length; fi++) {
+        const file = files[fi];
+        const prefix = files.length > 1 ? `[${fi + 1}/${files.length}] ` : "";
+        try {
+          const header = await file.slice(0, 5).text();
+          if (!header.includes("%PDF")) throw new Error("不是有效 PDF");
+
+          setProgress(`${prefix}正在解密 ${file.name}...`);
+          const buffer = await file.arrayBuffer();
+          const resultBytes = await unprotectPDF(buffer, password);
+
+          const blob = new Blob([resultBytes], { type: "application/pdf" });
+          if (blob.size === 0) throw new Error("解密后为空");
+
+          out.push({
+            name: `${file.name.replace(/\.pdf$/i, "")}-已解锁.pdf`,
+            blob,
+            size: blob.size,
+          });
+        } catch (inner: any) {
+          failed.push(file.name);
+        }
       }
 
-      setProgress("正在解密...");
-      const buffer = await file.arrayBuffer();
-      const resultBytes = await unprotectPDF(buffer, password);
-
-      const blob = new Blob([resultBytes], { type: "application/pdf" });
-      if (blob.size === 0) {
-        throw new Error("解密后的文件为空，请重试。");
+      if (out.length === 0) {
+        throw new Error("所有文件都解密失败，请确认密码是否正确。");
       }
-
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      setResults([
-        {
-          name: `${baseName}-已解锁.pdf`,
-          blob,
-          size: blob.size,
-        },
-      ]);
+      setResults(out);
+      if (failed.length > 0) {
+        setError(`${failed.length} 个文件解密失败：${failed.join("、")}。其余已成功。`);
+      }
       setProgress("");
     } catch (err: any) {
       console.error("Unlock PDF failed:", err);
@@ -121,10 +137,10 @@ export default function UnlockPdfPage() {
         <div className="space-y-6">
           <FileUpload
             onFilesSelected={handleFilesSelected}
-            multiple={false}
+            multiple
             accept=".pdf"
             acceptDescription="PDF"
-            maxFiles={1}
+            maxFiles={10}
             maxSizeMB={50}
             files={files}
             onRemoveFile={handleRemoveFile}
@@ -209,7 +225,7 @@ export default function UnlockPdfPage() {
           )}
         </div>
       ) : (
-        <ResultDownload results={results} onReset={handleClear} />
+        <ResultDownload results={results} onReset={handleClear} onDropFiles={handleFilesSelected} accept=".pdf" />
       )}
     </ToolLayout>
   );
