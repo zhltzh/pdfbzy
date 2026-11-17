@@ -7,6 +7,7 @@ const TONE: Record<AixunoSiteId, string> = {
   compress: "from-sky-500 to-emerald-500",
   pdf: "from-rose-500 to-red-500",
   bg: "from-violet-500 to-indigo-500",
+  scan: "from-blue-500 to-blue-700",
   tools: "from-teal-500 to-cyan-500",
 };
 
@@ -16,6 +17,7 @@ const MARK: Record<AixunoSiteId, string> = {
   compress: "ZIP",
   pdf: "PDF",
   bg: "BG",
+  scan: "DOC",
   tools: "AI",
 };
 
