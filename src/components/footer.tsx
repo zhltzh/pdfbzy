@@ -3,6 +3,9 @@ import { FileText } from "lucide-react";
 import { categories, availableTools, getToolBySlug } from "@/config/tools";
 import { BUILT_TOOL_SLUGS } from "@/config/built-tools";
 import { ShareLinks } from "@/components/share-links";
+import { AIXUNO_SITES, CURRENT_SITE } from "@/config/sites";
+
+const CURRENT_SITE_ID = CURRENT_SITE;
 
 // 已构建的工具（避免链接到未开发页面）
 const builtTools = availableTools.filter((t) =>
@@ -55,6 +58,30 @@ export function Footer() {
               </div>
             );
           })}
+        </div>
+
+        {/* 站群导航 */}
+        <div className="mt-8 border-t pt-6">
+          <div className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Aixuno 工具生态
+          </div>
+          <nav aria-label="Aixuno 站群" className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+            {AIXUNO_SITES.map((site) =>
+              site.id === CURRENT_SITE_ID ? (
+                <span key={site.id} aria-current="page" className="font-semibold text-gray-900">
+                  {site.label}
+                </span>
+              ) : (
+                <a
+                  key={site.id}
+                  href={site.href}
+                  className="text-gray-500 transition-colors hover:text-primary"
+                >
+                  {site.label}
+                </a>
+              )
+            )}
+          </nav>
         </div>
 
         {/* 底部信息 */}
