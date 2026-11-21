@@ -25,6 +25,20 @@ const LANGS = [
   { id: "eng", label: "仅英文", hint: "英文识别" },
 ] as const;
 
+// 语言包优先使用站内副本（国内可直连），缺失时回退到 CDN
+const LANG_PATH_LOCAL = "/vendor/tesseract/tessdata";
+const LANG_PATH_CDN = "https://tessdata.projectnaptha.com/4.0.0";
+
+let langPathPromise: Promise<string> | null = null;
+function resolveLangPath(): Promise<string> {
+  if (!langPathPromise) {
+    langPathPromise = fetch(`${LANG_PATH_LOCAL}/eng.traineddata.gz`, { method: "HEAD" })
+      .then((res) => (res.ok ? LANG_PATH_LOCAL : LANG_PATH_CDN))
+      .catch(() => LANG_PATH_CDN);
+  }
+  return langPathPromise;
+}
+
 export default function OCRTextPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -172,7 +186,7 @@ export default function OCRTextPage() {
     const worker = await Tesseract.createWorker(lang, 1, {
       workerPath: "/vendor/tesseract/worker.min.js",
       corePath: "/vendor/tesseract",
-      langPath: "https://tessdata.projectnaptha.com/4.0.0",
+      langPath: await resolveLangPath(),
       logger: (m: any) => {
         if (m.status === "recognizing text") {
           setProgress(
