@@ -1,10 +1,29 @@
 import type { Metadata } from "next";
 
+const title = "联系我们";
+const description =
+  "联系 PDFBzy 团队：如有建议、问题反馈或合作意向，欢迎随时联系我们。";
+const canonical = "https://pdf.aixuno.com/contact/";
+
 export const metadata: Metadata = {
-  title: "联系我们",
-  description:
-    "联系 PDFBzy 团队：如有建议、问题反馈或合作意向，欢迎随时联系我们。",
-  alternates: { canonical: "https://pdf.aixuno.com/contact" },
+  title,
+  description,
+  alternates: { canonical },
+  openGraph: {
+    title,
+    description,
+    url: canonical,
+    siteName: "PDFBzy",
+    type: "website",
+    locale: "zh_CN",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/og-image.png"],
+  },
 };
 
 export default function ContactPage() {

@@ -1,10 +1,29 @@
 import type { Metadata } from "next";
 
+const title = "使用条款";
+const description =
+  "PDFBzy 使用条款：免费在线 PDF 工具服务的使用规则、免责声明与用户责任说明。";
+const canonical = "https://pdf.aixuno.com/terms/";
+
 export const metadata: Metadata = {
-  title: "使用条款",
-  description:
-    "PDFBzy 使用条款：免费在线 PDF 工具服务的使用规则、免责声明与用户责任说明。",
-  alternates: { canonical: "https://pdf.aixuno.com/terms" },
+  title,
+  description,
+  alternates: { canonical },
+  openGraph: {
+    title,
+    description,
+    url: canonical,
+    siteName: "PDFBzy",
+    type: "website",
+    locale: "zh_CN",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/og-image.png"],
+  },
 };
 
 export default function TermsPage() {

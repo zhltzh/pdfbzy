@@ -2,11 +2,29 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BUILT_TOOL_COUNT } from "@/config/built-tools";
 
+const title = "关于我们";
+const description = `PDFBzy 是一个免费在线 PDF 工具平台，提供合并、拆分、转换、编辑、签名等 ${BUILT_TOOL_COUNT}+ 种 PDF 处理工具。所有工具在浏览器本地运行，无需注册，保护用户隐私。`;
+const canonical = "https://pdf.aixuno.com/about/";
+
 export const metadata: Metadata = {
-  title: "关于我们",
-  description:
-    `PDFBzy 是一个免费在线 PDF 工具平台，提供合并、拆分、转换、编辑、签名等 ${BUILT_TOOL_COUNT}+ 种 PDF 处理工具。所有工具在浏览器本地运行，无需注册，保护用户隐私。`,
-  alternates: { canonical: "https://pdf.aixuno.com/about" },
+  title,
+  description,
+  alternates: { canonical },
+  openGraph: {
+    title,
+    description,
+    url: canonical,
+    siteName: "PDFBzy",
+    type: "website",
+    locale: "zh_CN",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/og-image.png"],
+  },
 };
 
 export default function AboutPage() {

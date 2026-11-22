@@ -1,10 +1,29 @@
 import type { Metadata } from "next";
 
+const title = "隐私政策";
+const description =
+  "PDFBzy 隐私政策：所有 PDF 处理在浏览器本地完成，文件不上传服务器，我们不会收集、存储或分享你的文档数据。";
+const canonical = "https://pdf.aixuno.com/privacy/";
+
 export const metadata: Metadata = {
-  title: "隐私政策",
-  description:
-    "PDFBzy 隐私政策：所有 PDF 处理在浏览器本地完成，文件不上传服务器，我们不会收集、存储或分享你的文档数据。",
-  alternates: { canonical: "https://pdf.aixuno.com/privacy" },
+  title,
+  description,
+  alternates: { canonical },
+  openGraph: {
+    title,
+    description,
+    url: canonical,
+    siteName: "PDFBzy",
+    type: "website",
+    locale: "zh_CN",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/og-image.png"],
+  },
 };
 
 export default function PrivacyPage() {
