@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { FileQuestion } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: { absolute: "页面未找到 - PDFBzy" },
+  robots: { index: false, follow: true },
+};
 
 export default function NotFound() {
   return (
