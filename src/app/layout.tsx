@@ -166,6 +166,12 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
         </div>
+        {/* 百度统计 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `var _hmt=_hmt||[];(function(){var hm=document.createElement("script");hm.src="https://hm.baidu.com/hm.js?ef887868142b18a0c32bd9e20da7d91f";var s=document.getElementsByTagName("script")[0];s.parentNode.insertBefore(hm,s);})();`,
+          }}
+        />
       </body>
     </html>
   );
