@@ -74,6 +74,10 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <head>
+        {/* 性能：提前建立百度统计与 OCR 语言包 CDN 连接，缩短首屏第三方请求延迟 */}
+        <link rel="preconnect" href="https://hm.baidu.com" />
+        <link rel="dns-prefetch" href="https://hm.baidu.com" />
+        <link rel="dns-prefetch" href="https://tessdata.projectnaptha.com" />
         {/* 网站标识 JSON-LD */}
         <script
           type="application/ld+json"
