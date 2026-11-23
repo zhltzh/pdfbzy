@@ -100,6 +100,9 @@ export function Footer() {
               <Link href="/contact" className="text-gray-500 hover:text-primary transition-colors">
                 联系我们
               </Link>
+              <Link href="/guides/" className="text-gray-500 hover:text-primary transition-colors">
+                PDF 教程
+              </Link>
             </div>
             <p className="text-center text-sm text-gray-400">
               &copy; {new Date().getFullYear()} PDFBzy. All rights reserved.

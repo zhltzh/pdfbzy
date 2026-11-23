@@ -75,6 +75,12 @@ export function Header() {
             >
               所有工具
             </Link>
+            <Link
+              href="/guides/"
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-primary rounded-md hover:bg-gray-50 transition-colors"
+            >
+              教程
+            </Link>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -135,6 +141,13 @@ export function Header() {
             onClick={() => setIsMenuOpen(false)}
           >
             所有工具 →
+          </Link>
+          <Link
+            href="/guides/"
+            className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            PDF 教程
           </Link>
         </div>
       </div>
