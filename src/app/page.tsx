@@ -96,24 +96,51 @@ export default function Home() {
           <div className="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-100/50 blur-3xl" />
         </div>
 
-        <div className="relative mx-auto max-w-4xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
+        <div className="relative mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
           <div className="text-center">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-100 px-4 py-1.5 text-xs font-medium text-blue-600">
               <Sparkles className="h-3.5 w-3.5" />
               完全免费 · 无需注册 · 即用即走
             </div>
 
-            <h1 className="mt-8 text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl leading-tight">
+            <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl leading-tight">
               PDF 处理，
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
                 就这么简单
               </span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-500 leading-relaxed">
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-500 leading-relaxed">
               PDFBzy 提供免费在线 PDF 工具。
               合并、拆分、转换、编辑、签名……全部在浏览器本地完成，不上传服务器。
             </p>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/merge-pdf/"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-500"
+              >
+                合并 PDF
+              </Link>
+              <Link
+                href="/split-pdf/"
+                className="inline-flex items-center gap-2 rounded-xl bg-white border-2 border-blue-200 px-6 py-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
+              >
+                拆分 PDF
+              </Link>
+              <Link
+                href="/compress-pdf/"
+                className="inline-flex items-center gap-2 rounded-xl bg-white border-2 border-blue-200 px-6 py-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
+              >
+                压缩 PDF
+              </Link>
+              <Link
+                href="/pdf-to-jpg/"
+                className="inline-flex items-center gap-2 rounded-xl bg-white border-2 border-blue-200 px-6 py-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
+              >
+                PDF 转 JPG
+              </Link>
+            </div>
           </div>
         </div>
       </section>
