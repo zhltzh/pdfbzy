@@ -35,3 +35,67 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ---- pdfbzy 改版动画（滚动入场 + 合并演示卡） ---- */
+
+.fp-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fp-reveal.fp-in {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes fp-doc-a {
+  0%, 100% { transform: translateX(0); }
+  45%, 60% { transform: translateX(38%); }
+}
+
+@keyframes fp-doc-b {
+  0%, 100% { transform: translateX(0); }
+  45%, 60% { transform: translateX(-38%); }
+}
+
+@keyframes fp-doc-merged {
+  0%, 30% { opacity: 0.45; transform: scale(0.96); }
+  55% { opacity: 1; transform: scale(1.03); }
+  80%, 100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fp-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.18); }
+  50% { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0.05); }
+}
+
+.fp-doc-a {
+  animation: fp-doc-a 4.2s ease-in-out infinite;
+}
+
+.fp-doc-b {
+  animation: fp-doc-b 4.2s ease-in-out infinite;
+}
+
+.fp-doc-merged {
+  animation: fp-doc-merged 4.2s ease-in-out infinite;
+}
+
+.fp-pulse-dot {
+  animation: fp-pulse 2s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fp-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .fp-doc-a,
+  .fp-doc-b,
+  .fp-doc-merged,
+  .fp-pulse-dot {
+    animation: none;
+  }
+}

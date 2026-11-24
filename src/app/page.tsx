@@ -6,19 +6,23 @@ import {
   Zap,
   Globe,
   Star,
+  Sparkles,
   ChevronRight,
   ChevronDown,
-  Sparkles,
   Upload,
   Download,
   MousePointerClick,
-  Layers,
-  BadgeCheck,
-  Lock,
-  UserCheck,
+  FilePlus2,
+  FileStack,
+  FileType2,
+  PenLine,
+  FileArchive,
+  FileKey2,
+  type LucideIcon,
 } from "lucide-react";
 import { availableTools, categories, type ToolDefinition } from "@/config/tools";
 import { BUILT_TOOL_SLUGS, BUILT_TOOL_COUNT } from "@/config/built-tools";
+import { Reveal } from "@/components/reveal";
 
 const builtTools = availableTools.filter((t) =>
   BUILT_TOOL_SLUGS.includes(t.slug as (typeof BUILT_TOOL_SLUGS)[number])
@@ -47,10 +51,19 @@ function ToolCard({ tool }: { tool: ToolDefinition }) {
 
 // 统计数字（在线工具数为真实已实现数量）
 const stats = [
-  { label: "在线工具", value: `${BUILT_TOOL_COUNT}+`, icon: Layers },
-  { label: "免费使用", value: "100%", icon: BadgeCheck },
-  { label: "浏览器本地处理", value: "100%", icon: Lock },
-  { label: "无需注册", value: "0 门槛", icon: UserCheck },
+  { label: "本地处理", value: "100%" },
+  { label: "字节上传", value: "0" },
+  { label: "在线工具", value: `${BUILT_TOOL_COUNT}+` },
+  { label: "使用门槛", value: "0" },
+];
+
+const scenes: [LucideIcon, string, string][] = [
+  [FilePlus2, "合同归档合并", "把散落各处的合同、附件合并成一份完整 PDF，归档发送一步到位。"],
+  [FileStack, "拆分与重组", "从报告中抽出某几页，或按章节拆成多个文件，页序自由调整。"],
+  [FileType2, "格式互转", "图片一键转 PDF，PDF 也能导出成 JPG/PNG，跨设备查看不变形。"],
+  [PenLine, "签字与盖章", "电子签名直接签署，加水印注明用途，正式文件快速出件。"],
+  [FileArchive, "发送前瘦身", "压缩 PDF 到邮箱限额内，附件再也不会发送失败。"],
+  [FileKey2, "敏感文件加密", "合同、证件加密加密码，重要文档本地处理不外泄。"],
 ];
 
 const features = [
@@ -89,57 +102,112 @@ const features = [
 export default function Home() {
   return (
     <div>
-      {/* ===== HERO ===== 纯净第一屏：badge + 标题 + 描述 + 2 按钮 */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/80 via-white to-white">
-        {/* 背景装饰（极简） */}
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <div className="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-100/50 blur-3xl" />
-        </div>
+      {/* ===== HERO ===== 深色渐变 + 徽章 + 合并演示卡 */}
+      <section className="relative overflow-hidden bg-[#070b16]">
+        {/* 网格底纹 */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.55]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
+            maskImage: "radial-gradient(75% 60% at 50% 0%, #000 30%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(75% 60% at 50% 0%, #000 30%, transparent 100%)",
+          }}
+          aria-hidden="true"
+        />
+        <div className="pointer-events-none absolute -top-32 left-[-6rem] h-96 w-96 rounded-full bg-rose-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 right-[-4rem] h-96 w-96 rounded-full bg-blue-500/25 blur-3xl" />
 
-        <div className="relative mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-100 px-4 py-1.5 text-xs font-medium text-blue-600">
-              <Sparkles className="h-3.5 w-3.5" />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
+          <div className="text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/15 px-4 py-1.5 text-sm font-semibold text-blue-100">
+              <span className="fp-pulse-dot h-2 w-2 rounded-full bg-emerald-400" />
               完全免费 · 无需注册 · 即用即走
             </div>
 
-            <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl leading-tight">
+            <h1 className="mt-6 text-4xl font-extrabold leading-[1.12] tracking-tight text-white sm:text-5xl">
               PDF 处理，
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              <span className="bg-gradient-to-r from-sky-300 via-blue-200 to-rose-300 bg-clip-text text-transparent">
                 就这么简单
               </span>
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-500 leading-relaxed">
-              PDFBzy 提供免费在线 PDF 工具。
+            <p className="mx-auto mt-5 max-w-xl text-base text-blue-100/85 sm:text-lg lg:mx-0">
+              PDFBzy 提供 {BUILT_TOOL_COUNT}+ 种免费在线 PDF 工具。
               合并、拆分、转换、编辑、签名……全部在浏览器本地完成，不上传服务器。
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-5 flex flex-wrap justify-center gap-2 lg:justify-start">
+              <span className="rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-1 text-[13px] font-semibold text-slate-200">不上传</span>
+              <span className="rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-1 text-[13px] font-semibold text-slate-200">免注册</span>
+              <span className="rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-1 text-[13px] font-semibold text-slate-200">{BUILT_TOOL_COUNT}+ 个工具</span>
+            </div>
+
+            {/* 常用工具直达 */}
+            <div className="mt-7 flex flex-wrap justify-center gap-2.5 lg:justify-start">
+              {[
+                { href: "/merge-pdf/", label: "合并 PDF" },
+                { href: "/split-pdf/", label: "拆分 PDF" },
+                { href: "/compress-pdf/", label: "压缩 PDF" },
+                { href: "/pdf-to-jpg/", label: "PDF 转 JPG" },
+              ].map((tool) => (
+                <Link
+                  key={tool.href}
+                  href={tool.href}
+                  className="rounded-xl border border-white/15 bg-white/[0.07] px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/[0.13]"
+                >
+                  {tool.label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-3 lg:justify-start">
               <Link
-                href="/merge-pdf/"
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-500"
+                href="/merge-pdf"
+                className="rounded-xl bg-gradient-to-r from-blue-500 to-rose-500 px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_32px_rgba(59,110,242,0.45)] transition hover:-translate-y-0.5"
               >
-                合并 PDF
+                开始处理 PDF
               </Link>
               <Link
-                href="/split-pdf/"
-                className="inline-flex items-center gap-2 rounded-xl bg-white border-2 border-blue-200 px-6 py-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
+                href="/tools"
+                className="rounded-xl border border-white/20 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.12]"
               >
-                拆分 PDF
+                浏览全部工具
               </Link>
-              <Link
-                href="/compress-pdf/"
-                className="inline-flex items-center gap-2 rounded-xl bg-white border-2 border-blue-200 px-6 py-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
-              >
-                压缩 PDF
-              </Link>
-              <Link
-                href="/pdf-to-jpg/"
-                className="inline-flex items-center gap-2 rounded-xl bg-white border-2 border-blue-200 px-6 py-3 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
-              >
-                PDF 转 JPG
-              </Link>
+            </div>
+            <p className="mt-4 text-xs text-slate-400">手机电脑都能用 · 无需安装任何软件</p>
+          </div>
+
+          {/* 合并演示卡 */}
+          <div className="mx-auto w-full max-w-md" aria-hidden="true">
+            <div className="rounded-2xl border border-white/10 bg-[#0d1222]/90 p-6 shadow-[0_24px_64px_rgba(10,15,30,0.45)]">
+              <div className="flex items-end justify-center gap-3 pt-2">
+                <div className="fp-doc-a w-28 rounded-lg border border-white/10 bg-white/[0.07] p-3 text-center">
+                  <FileText className="mx-auto h-6 w-6 text-blue-300" />
+                  <p className="mt-2 truncate text-[11px] font-semibold text-slate-200">报告.pdf</p>
+                  <p className="text-[10px] text-slate-400">2 页</p>
+                </div>
+                <div className="fp-doc-b w-28 rounded-lg border border-white/10 bg-white/[0.07] p-3 text-center">
+                  <FileText className="mx-auto h-6 w-6 text-rose-300" />
+                  <p className="mt-2 truncate text-[11px] font-semibold text-slate-200">附录.pdf</p>
+                  <p className="text-[10px] text-slate-400">3 页</p>
+                </div>
+              </div>
+              <svg viewBox="0 0 100 14" className="mx-auto mt-2 h-4 w-24 text-blue-300/60" preserveAspectRatio="none">
+                <path d="M2 7 C 25 -4, 75 -4, 98 7" stroke="currentColor" strokeWidth="1.6" fill="none" strokeDasharray="3 3" />
+                <path d="M2 7 C 25 18, 75 18, 98 7" stroke="currentColor" strokeWidth="1.6" fill="none" strokeDasharray="3 3" />
+              </svg>
+              <div className="fp-doc-merged mx-auto mt-2 w-40 rounded-xl bg-gradient-to-br from-blue-500 to-rose-500 p-3 text-center shadow-[0_10px_28px_rgba(99,102,241,0.4)]">
+                <FileStack className="mx-auto h-7 w-7 text-white" />
+                <p className="mt-1.5 text-xs font-bold text-white">合并.pdf · 5 页</p>
+              </div>
+              <p className="mt-4 text-center text-xs font-medium text-blue-200/80">本地合并 · 文件不出设备</p>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg border border-white/10 bg-white/[0.06] px-2 py-2 text-xs font-semibold text-slate-200">{BUILT_TOOL_COUNT}+ 工具</div>
+                <div className="rounded-lg border border-white/10 bg-white/[0.06] px-2 py-2 text-xs font-semibold text-slate-200">100% 本地</div>
+                <div className="rounded-lg border border-white/10 bg-white/[0.06] px-2 py-2 text-xs font-semibold text-slate-200">0 字节上传</div>
+              </div>
             </div>
           </div>
         </div>
@@ -255,6 +323,33 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ===== 使用场景 ===== */}
+      <section className="border-t bg-white py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">使用场景</span>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
+              什么时候需要 PDFBzy？
+            </h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {scenes.map(([Icon, title, desc]) => (
+              <Reveal key={title}>
+                <div className="flex h-full items-start gap-4 rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md">
+                  <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-[15px] font-semibold text-gray-900">{title}</h3>
+                    <p className="mt-1 text-sm text-gray-500">{desc}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===== 为什么选择我们 ===== */}
       <section className="border-t bg-gray-50/50 py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -284,17 +379,61 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 统计数字 ===== */}
-      <section className="border-t bg-white py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 max-w-3xl mx-auto">
+      {/* ===== 对比表 ===== */}
+      <section className="border-t bg-white py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">方案对比</span>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
+              为什么不用云端 PDF 网站？
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-gray-500">
+              主流在线 PDF 工具要把你的文件先传到服务器。区别一目了然：
+            </p>
+          </div>
+          <Reveal>
+            <div className="overflow-x-auto rounded-2xl border shadow-sm">
+              <table className="w-full border-collapse bg-white text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3.5 text-left font-semibold text-gray-900">能力</th>
+                    <th className="bg-gradient-to-r from-blue-500 to-rose-500 px-4 py-3.5 text-center font-bold text-white">PDFBzy</th>
+                    <th className="px-4 py-3.5 text-center font-semibold text-gray-600">云端 PDF 网站</th>
+                    <th className="px-4 py-3.5 text-center font-semibold text-gray-600">桌面软件</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["文件离开设备", "绝不", "上传到服务器", "不会"],
+                    ["免费与限制", "全免费 · 无次数限制", "免费版常有大小/次数限制", "专业版需付费"],
+                    ["隐私敏感文件", "理想", "建议先读隐私政策", "尚可"],
+                    ["打开即用", "任意浏览器", "需等待上传下载", "需下载安装"],
+                    ["处理速度", "本地即时", "受网络带宽影响", "本地即时"],
+                  ].map((row) => (
+                    <tr key={row[0]} className="border-t">
+                      <td className="px-4 py-3.5 font-semibold text-gray-800">{row[0]}</td>
+                      <td className="bg-gradient-to-b from-blue-50 to-rose-50 px-4 py-3.5 text-center font-bold text-emerald-600">✓ {row[1]}</td>
+                      <td className="px-4 py-3.5 text-center text-gray-500">{row[2]}</td>
+                      <td className="px-4 py-3.5 text-center text-gray-500">{row[3]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ===== 统计数字（深色数据带） ===== */}
+      <section className="border-t bg-white py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 gap-4 rounded-3xl bg-[#0b1020] p-8 text-center sm:p-10 lg:grid-cols-4">
             {stats.map((stat) => (
-              <div key={stat.label} className="text-center group">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/5 text-primary transition-all group-hover:bg-primary group-hover:text-white">
-                  <stat.icon className="h-6 w-6" />
-                </div>
-                <p className="mt-3 text-3xl font-bold text-gray-900">{stat.value}</p>
-                <p className="mt-1 text-sm text-gray-400">{stat.label}</p>
+              <div key={stat.label}>
+                <b className="block bg-gradient-to-r from-sky-300 to-rose-300 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl">
+                  {stat.value}
+                </b>
+                <span className="mt-1 block text-sm text-slate-400">{stat.label}</span>
               </div>
             ))}
           </div>
@@ -420,29 +559,26 @@ export default function Home() {
       />
 
       {/* ===== CTA 底部 ===== */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-800 py-20">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/5 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-white/5 blur-3xl" />
-        </div>
-        <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">
+      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0c1330] via-[#131b3f] to-[#2b1030] px-6 py-16 text-center shadow-2xl sm:py-20">
+          <div className="pointer-events-none absolute -top-24 left-1/2 h-56 w-[36rem] -translate-x-1/2 rounded-full bg-blue-400/25 blur-3xl" />
+          <h2 className="relative text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             开始免费使用 PDFBzy
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-blue-100 text-lg">
+          <p className="relative mx-auto mt-3 max-w-xl text-sm text-slate-300 sm:text-base">
             无需注册，无需下载，打开浏览器即可处理你的 PDF 文件。
           </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          <div className="relative mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/merge-pdf"
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-semibold text-blue-600 shadow-lg hover:bg-blue-50 hover:-translate-y-0.5 transition-all"
+              className="rounded-xl bg-gradient-to-r from-blue-500 to-rose-500 px-8 py-3.5 text-base font-bold text-white shadow-[0_12px_32px_rgba(99,102,241,0.5)] transition hover:-translate-y-0.5"
             >
               立即开始
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="ml-1 inline h-4 w-4" />
             </Link>
             <Link
               href="/tools"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-white/30 px-8 py-3.5 text-base font-semibold text-white hover:bg-white/10 transition-all"
+              className="rounded-xl border border-white/20 bg-white/[0.06] px-8 py-3.5 text-base font-semibold text-slate-200 transition hover:bg-white/[0.12]"
             >
               浏览所有工具
             </Link>
